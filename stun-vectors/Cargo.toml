@@ -6,3 +6,5 @@ edition = "2018"
 
 [dependencies]
 
+[dev-dependencies]
+stun-rs = { path = "../stun-rs", features = ["experiments", "ice", "turn"] }
