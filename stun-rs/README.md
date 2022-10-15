@@ -1,4 +1,8 @@
+[![Crates.io](https://img.shields.io/crates/v/stun-rs)](https://crates.io/crates/stun-rs)
 [![Docs](https://img.shields.io/docsrs/stun-rs/latest)](https://docs.rs/stun-rs)
+[![codecov](https://codecov.io/gh/sancane/rustun/branch/main/graph/badge.svg?token=19Juem5PrN)](https://codecov.io/gh/sancane/rustun)
+[![Rust Report Card](https://rust-reportcard.xuri.me/badge/github.com/sancane/rustun)](https://rust-reportcard.xuri.me/report/github.com/sancane/rustun)
+
 # Crate stun_rs
 
 This crate provides a simple but high effective framework to manage STUN protocol messages. The implementation is based on:
@@ -10,7 +14,7 @@ This crate provides a simple but high effective framework to manage STUN protoco
 ## Usage
 Example that creates and encodes a STUN Binding request
 ```rust
-// Create attributes
+ // Create attributes
  let username = UserName::new("\u{30DE}\u{30C8}\u{30EA}\u{30C3}\u{30AF}\u{30B9}")?;
  let nonce = Nonce::new("f//499k954d6OL34oL9FSTvy64sA")?;
  let realm = Realm::new("example.org")?;
