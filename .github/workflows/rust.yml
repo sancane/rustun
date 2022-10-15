@@ -1,0 +1,46 @@
+name: Rust
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run: cargo build --verbose
+    - run: rustup component add clippy
+    - uses: actions-rs/clippy-check@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Run tests
+      run: cargo test --verbose
+
+  cargo_check:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install cargo-sort
+      run: cargo install --locked cargo-sort
+    - run: cargo sort -w -c
+
+  spellcheck:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install cargo-spellcheck
+      run: cargo install --locked cargo-spellcheck
+    - run: cargo spellcheck -m 99 --cfg=.github/workflows/spellchecker.cfg

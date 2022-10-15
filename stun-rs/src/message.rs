@@ -98,7 +98,7 @@ impl Encode for MessageType {
 
 /// The STUN method is a 12 bits hex number in the range 0x000-0xFFF but
 /// valid values are defined in the range 0x00-0xFF.
-/// STUN methods in the range 0x000-0x07F are assigned by IETF Review
+/// STUN methods in the range 0x000-0x07F are assigned by `IETF` Review
 /// [`RFC8126`](https://datatracker.ietf.org/doc/html/rfc8126). STUN
 /// methods in the range 0x080-0x0FF are assigned by Expert Review.
 ///

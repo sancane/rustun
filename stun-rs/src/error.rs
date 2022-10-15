@@ -135,7 +135,7 @@ impl StunError {
         }
     }
 }
-/// Describes the error happenened when parsing an [`StunAttribute`](crate::attributes::StunAttribute)
+/// Describes the error happened when parsing an [`StunAttribute`](crate::attributes::StunAttribute)
 #[derive(Debug)]
 pub struct StunAttributeError {
     /// The attribute type, if it is known

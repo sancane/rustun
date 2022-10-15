@@ -1,4 +1,4 @@
-// RFC 5769                    STUN Test Vectors                 April 2010
+// STUN Test Vectors [`RFC5769`](https://datatracker.ietf.org/doc/html/rfc5769)
 
 /// 2.1. Sample Request.
 /// This request uses the following parameters:
@@ -134,17 +134,17 @@ pub static SAMPLE_REQUEST_LONG_TERM_AUTH: [u8; 116] = [
     0x8C, 0xA8, 0x96, 0x66, // }
 ];
 
-/// RFC8489
+// [`RFC8489`](https://datatracker.ietf.org/doc/html/rfc8489)
 
 /// B.1.  Sample Request with Long-Term Authentication with
-/// MESSAGE-INTEGRITY-SHA256 and USERHASH.
+/// MESSAGE-INTEGRITY-SHA256 and USER-HASH.
 /// This request uses the following parameters:
-/// Username: "<U+30DE><U+30C8><U+30EA><U+30C3><U+30AF><U+30B9>" (without
+/// User name: `"<U+30DE><U+30C8><U+30EA><U+30C3><U+30AF><U+30B9>"` (without
 ///     quotes) unaffected by OpaqueString [`RFC8265`](https://datatracker.ietf.org/doc/html/rfc8265) processing
-/// Password: "The<U+00AD>M<U+00AA>tr<U+2168>" and "TheMatrIX" (without
+/// Password: `"The<U+00AD>M<U+00AA>tr<U+2168>"` and `"TheMatrIX"` (without
 ///     quotes) respectively before and after OpaqueString [`RFC8265`](https://datatracker.ietf.org/doc/html/rfc8265)
 ///     processing
-/// Nonce: "obMatJos2AAACf//499k954d6OL34oL9FSTvy64sA" (without quotes)
+/// Nonce: `"obMatJos2AAACf//499k954d6OL34oL9FSTvy64sA"` (without quotes)
 /// Realm: "example.org" (without quotes)
 pub static SAMPLE_REQUEST_LONG_TERM_AUTH_SHA256: [u8; 156] = [
     0x00, 0x01, 0x00, 0x88, //    Request type and message length
