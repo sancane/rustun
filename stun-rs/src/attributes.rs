@@ -15,6 +15,9 @@ pub use unknown::Unknown;
 
 pub mod stun;
 
+#[cfg(feature = "ice")]
+pub mod ice;
+
 #[cfg(feature = "turn")]
 pub mod turn;
 
@@ -255,6 +258,11 @@ stunt_attribute_impl!(
     (UserHash, stun),
     (UserName, stun),
     (XorMappedAddress, stun),
+    // ICE Attributes
+    (IceControlled, ice, "ice"),
+    (IceControlling, ice, "ice"),
+    (Priority, ice, "ice"),
+    (UseCandidate, ice, "ice"),
     // TURN Attributes
     (ChannelNumber, turn, "turn"),
     (LifeTime, turn, "turn"),

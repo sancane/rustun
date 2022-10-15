@@ -26,4 +26,5 @@ rand = "0.8.5"
 [features]
 default = []
 experiments = []
+ice = []
 turn = []
