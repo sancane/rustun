@@ -1,0 +1,28 @@
+[package]
+name = "stun-rs"
+version = "0.1.0"
+authors = ["Santiago Carot-Nemesio <sancane@gmail.com"]
+edition = "2018"
+
+[dev-dependencies]
+stun-vectors = { path = "../stun-vectors" }
+
+[dependencies]
+bounded-integer = { version = "0.5.2", features = ["types"] }
+byteorder = "1"
+crc = "2.1.0"
+fallible-iterator = "0.2.0"
+hmac-sha1 = "0.1"
+hmac-sha256 = "1.1.2"
+hostname-validator = "1.1.1"
+lazy_static = "1.4.0"
+md5 = "0.7.0"
+paste = "1.0.7"
+precis-core = "0.1.8"
+precis-profiles = "0.1.8"
+quoted-string-parser = "0.1.0"
+rand = "0.8.5"
+
+[features]
+default = []
+experiments = []
