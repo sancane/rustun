@@ -14,7 +14,7 @@ This crate provides a simple but high effective framework to manage STUN protoco
 ## Usage
 Example that creates and encodes a STUN Binding request
 ```rust
-// Create attributes
+ // Create attributes
  let username = UserName::new("\u{30DE}\u{30C8}\u{30EA}\u{30C3}\u{30AF}\u{30B9}")?;
  let nonce = Nonce::new("f//499k954d6OL34oL9FSTvy64sA")?;
  let realm = Realm::new("example.org")?;
