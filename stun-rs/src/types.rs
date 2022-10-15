@@ -276,7 +276,7 @@ const MAX_REASON_PHRASE_DECODED_SIZE: usize = 763;
 /// The reason phrase is meant for diagnostic purposes and can be anything
 /// appropriate for the error code.
 /// Recommended reason phrases for the defined error codes are included
-/// in the IANA registry for error codes.  The reason phrase MUST be a
+/// in the `IANA` registry for error codes.  The reason phrase MUST be a
 /// UTF-8-encoded [`RFC3629`](https://datatracker.ietf.org/doc/html/rfc3629)
 /// sequence of fewer than 128 characters (which can be as long as 509 bytes
 /// when encoding them or 763 bytes when decoding them).
