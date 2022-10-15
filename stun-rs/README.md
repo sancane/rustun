@@ -1,4 +1,8 @@
+[![Crates.io](https://img.shields.io/crates/v/stun-rs)](https://crates.io/crates/stun-rs)
 [![Docs](https://img.shields.io/docsrs/stun-rs/latest)](https://docs.rs/stun-rs)
+[![codecov](https://codecov.io/gh/sancane/rustun/branch/main/graph/badge.svg?token=19Juem5PrN)](https://codecov.io/gh/sancane/rustun)
+[![Rust Report Card](https://rust-reportcard.xuri.me/badge/github.com/sancane/rustun)](https://rust-reportcard.xuri.me/report/github.com/sancane/rustun)
+
 # Crate stun_rs
 
 This crate provides a simple but high effective framework to manage STUN protocol messages. The implementation is based on:
