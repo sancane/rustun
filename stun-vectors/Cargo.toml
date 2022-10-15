@@ -1,0 +1,8 @@
+[package]
+name = "stun-vectors"
+version = "0.1.0"
+authors = ["Santiago Carot-Nemesio <sancane@gmail.com"]
+edition = "2018"
+
+[dependencies]
+
