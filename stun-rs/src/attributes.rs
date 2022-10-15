@@ -15,6 +15,9 @@ pub use unknown::Unknown;
 
 pub mod stun;
 
+#[cfg(feature = "turn")]
+pub mod turn;
+
 /// Trait implemented by all [`StunAttribute`] that required validation
 /// when they are decoded
 pub(crate) trait Verifiable {
@@ -252,6 +255,20 @@ stunt_attribute_impl!(
     (UserHash, stun),
     (UserName, stun),
     (XorMappedAddress, stun),
+    // TURN Attributes
+    (ChannelNumber, turn, "turn"),
+    (LifeTime, turn, "turn"),
+    (XorPeerAddress, turn, "turn"),
+    (XorRelayedAddress, turn, "turn"),
+    (Data, turn, "turn"),
+    (RequestedAddressFamily, turn, "turn"),
+    (EvenPort, turn, "turn"),
+    (DontFragment, turn, "turn"),
+    (RequestedTrasport, turn, "turn"),
+    (AddtionalAddressFamily, turn, "turn"),
+    (ReservationToken, turn, "turn"),
+    (AddressErrorCode, turn, "turn"),
+    (Icmp, turn, "turn")
 );
 
 #[cfg(test)]
