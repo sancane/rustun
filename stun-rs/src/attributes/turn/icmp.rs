@@ -169,6 +169,7 @@ stunt_attribute!(Icmp, ICMP);
 mod tests {
     use super::*;
     use crate::error::StunErrorType;
+    use crate::StunAttribute;
 
     #[test]
     fn decode_icmp_value() {
@@ -229,5 +230,20 @@ mod tests {
 
         let expected_buffer = [0x00, 0x00, 0xff, 0xff, 0x01, 0x02, 0x03, 0x04];
         assert_eq!(&buffer[..], &expected_buffer[..]);
+    }
+
+    #[test]
+    fn icmp_stunt_attribute() {
+        let icmp_type = IcmpType::new(127).expect("Can not create ICMP type");
+        let icmp_code = IcmpCode::new(511).expect("Can not create ICMP type");
+        let icmp = Icmp::new(icmp_type, icmp_code, [0x01, 0x02, 0x03, 0x04]);
+
+        let attr = StunAttribute::Icmp(icmp);
+        assert!(attr.is_icmp());
+        assert!(attr.as_icmp().is_ok());
+        assert!(attr.as_unknown().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!("Icmp(Icmp { icmp_type: Bounded(127), icmp_code: Bounded(511), error_data: [1, 2, 3, 4] })", dbg_fmt);
     }
 }

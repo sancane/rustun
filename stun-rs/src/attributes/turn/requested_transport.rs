@@ -2,7 +2,7 @@ use crate::attributes::{stunt_attribute, DecodeAttributeValue, EncodeAttributeVa
 use crate::common::check_buffer_boundaries;
 use crate::context::{AttributeDecoderContext, AttributeEncoderContext};
 use crate::protocols::{ProtocolNumber, UDP};
-use crate::{Encode, StunError};
+use crate::{Decode, Encode, StunError};
 
 const REQUESTED_TRANSPORT: u16 = 0x0019;
 const REQUESTED_TRANSPORT_SIZE: usize = 4;
@@ -62,7 +62,7 @@ impl DecodeAttributeValue for RequestedTrasport {
         let raw_value = ctx.raw_value();
         check_buffer_boundaries(raw_value, REQUESTED_TRANSPORT_SIZE)?;
         Ok((
-            Self(ProtocolNumber::new(raw_value[0])),
+            Self(ProtocolNumber::decode(raw_value)?.0),
             REQUESTED_TRANSPORT_SIZE,
         ))
     }
@@ -93,6 +93,7 @@ mod tests {
     use super::*;
     use crate::error::StunErrorType;
     use crate::protocols;
+    use crate::StunAttribute;
 
     #[test]
     fn decode_requested_transport_constructor() {
@@ -165,5 +166,19 @@ mod tests {
         assert_eq!(result, Ok(4));
         let expected_buffer = [0x11, 0x00, 0x00, 0x00];
         assert_eq!(&buffer[..], &expected_buffer[..]);
+    }
+
+    #[test]
+    fn requested_transport_stunt_attribute() {
+        let attr = StunAttribute::RequestedTrasport(RequestedTrasport::from(protocols::UDP));
+        assert!(attr.is_requested_trasport());
+        assert!(attr.as_requested_trasport().is_ok());
+        assert!(attr.as_unknown().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!(
+            "RequestedTrasport(RequestedTrasport(ProtocolNumber(17)))",
+            dbg_fmt
+        );
     }
 }

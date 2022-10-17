@@ -115,6 +115,7 @@ stunt_attribute!(PasswordAlgorithm, PASSWORD_ALGORITHM);
 mod tests {
     use super::*;
     use crate::error::StunErrorType;
+    use crate::StunAttribute;
 
     #[test]
     fn decode_password_algorithm() {
@@ -234,6 +235,21 @@ mod tests {
         assert_eq!(
             result.expect_err("Error expected"),
             StunErrorType::SmallBuffer
+        );
+    }
+
+    #[test]
+    fn password_algorithm_stunt_attribute() {
+        let algorithm = Algorithm::from(AlgorithmId::MD5);
+        let attr = StunAttribute::PasswordAlgorithm(PasswordAlgorithm::new(algorithm));
+        assert!(attr.is_password_algorithm());
+        assert!(attr.as_password_algorithm().is_ok());
+        assert!(attr.as_unknown().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!(
+            "PasswordAlgorithm(PasswordAlgorithm(Algorithm { algorithm: MD5, params: None }))",
+            dbg_fmt
         );
     }
 }

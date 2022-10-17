@@ -76,6 +76,7 @@ mod tests {
     use super::*;
     use crate::attributes::{DecodeAttributeValue, EncodeAttributeValue};
     use crate::error::StunErrorType;
+    use crate::StunAttribute;
 
     #[test]
     fn decode_error_code() {
@@ -158,5 +159,20 @@ mod tests {
             0x6e,
         ];
         assert_eq!(&buffer[..], &cmp_buffer[..]);
+    }
+
+    #[test]
+    fn error_code_stunt_attribute() {
+        let error = ErrorCodeType::new(318, "test reason").expect("Can not create error code type");
+        let attr = StunAttribute::ErrorCode(ErrorCode::new(error));
+        assert!(attr.is_error_code());
+        assert!(attr.as_error_code().is_ok());
+        assert!(attr.as_unknown().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!(
+            "ErrorCode(ErrorCode(ErrorCode { error_code: 318, reason: \"test reason\" }))",
+            dbg_fmt
+        );
     }
 }

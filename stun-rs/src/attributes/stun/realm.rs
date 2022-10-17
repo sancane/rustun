@@ -188,6 +188,7 @@ stunt_attribute!(Realm, REALM);
 mod tests {
     use super::*;
     use crate::error::StunErrorType;
+    use crate::StunAttribute;
 
     #[test]
     fn constructor_realm() {
@@ -310,5 +311,16 @@ mod tests {
             result.expect_err("Error expected"),
             StunErrorType::SmallBuffer
         );
+    }
+
+    #[test]
+    fn realm_stunt_attribute() {
+        let attr = StunAttribute::Realm(Realm::try_from("test").expect("Expected QuotedString"));
+        assert!(attr.is_realm());
+        assert!(attr.as_realm().is_ok());
+        assert!(attr.as_unknown().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!("Realm(Realm(QuotedString(\"test\")))", dbg_fmt);
     }
 }

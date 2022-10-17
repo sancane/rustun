@@ -75,6 +75,7 @@ stunt_attribute!(ReservationToken, RESERVATION_TOKEN);
 mod tests {
     use super::*;
     use crate::error::StunErrorType;
+    use crate::StunAttribute;
 
     #[test]
     fn decode_reservation_token_constructor() {
@@ -136,5 +137,20 @@ mod tests {
         let result = attr.encode(ctx);
         assert_eq!(result, Ok(8));
         assert_eq!(buffer, token);
+    }
+
+    #[test]
+    fn reservatiom_token_stunt_attribute() {
+        let token = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08];
+        let attr = StunAttribute::ReservationToken(ReservationToken::from(token));
+        assert!(attr.is_reservation_token());
+        assert!(attr.as_reservation_token().is_ok());
+        assert!(attr.as_unknown().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!(
+            "ReservationToken(ReservationToken([1, 2, 3, 4, 5, 6, 7, 8]))",
+            dbg_fmt
+        );
     }
 }

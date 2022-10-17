@@ -22,3 +22,22 @@ address_port_attribute!(
 );
 
 address_port_tests!(MappedAddress, super);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::StunAttribute;
+    use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+
+    #[test]
+    fn mapped_address_stunt_attribute() {
+        let socket = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080);
+        let attr = StunAttribute::MappedAddress(MappedAddress::from(socket));
+        assert!(attr.is_mapped_address());
+        assert!(attr.as_mapped_address().is_ok());
+        assert!(attr.as_error_code().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!("MappedAddress(MappedAddress(127.0.0.1:8080))", dbg_fmt);
+    }
+}

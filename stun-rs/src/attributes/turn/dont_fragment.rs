@@ -16,3 +16,20 @@ crate::common::empty_attribute!(
     DontFragment,
     DONT_FRAGMENT,
 );
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::StunAttribute;
+
+    #[test]
+    fn dont_fragment_stunt_attribute() {
+        let attr = StunAttribute::DontFragment(DontFragment::default());
+        assert!(attr.is_dont_fragment());
+        assert!(attr.as_dont_fragment().is_ok());
+        assert!(attr.as_error_code().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!("DontFragment(DontFragment)", dbg_fmt);
+    }
+}

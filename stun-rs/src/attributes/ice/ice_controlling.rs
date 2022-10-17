@@ -16,3 +16,20 @@ crate::common::integer_attribute!(
     ICE_CONTROLLING,
     u64,
 );
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::StunAttribute;
+
+    #[test]
+    fn ice_controlling_stunt_attribute() {
+        let attr = StunAttribute::IceControlling(IceControlling::from(1234));
+        assert!(attr.is_ice_controlling());
+        assert!(attr.as_ice_controlling().is_ok());
+        assert!(attr.as_error_code().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!("IceControlling(IceControlling(1234))", dbg_fmt);
+    }
+}

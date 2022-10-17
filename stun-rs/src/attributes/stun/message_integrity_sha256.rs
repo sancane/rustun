@@ -44,6 +44,7 @@ mod tests {
     use super::*;
     use crate::attributes::{EncodeAttributeValue, Verifiable};
     use crate::context::AttributeEncoderContext;
+    use crate::StunAttribute;
     use crate::{Algorithm, AlgorithmId, DecoderContextBuilder, HMACKey};
 
     #[test]
@@ -114,5 +115,17 @@ mod tests {
         let ctx = DecoderContextBuilder::default().with_key(key).build();
 
         assert!(attr.verify(&input, &ctx));
+    }
+
+    #[test]
+    fn message_integrity_sha256_stunt_attribute() {
+        let key = HMACKey::new_short_term("test").expect("Can not create short term credential");
+        let attr = StunAttribute::MessageIntegritySha256(MessageIntegritySha256::new(key));
+        assert!(attr.is_message_integrity_sha256());
+        assert!(attr.as_message_integrity_sha256().is_ok());
+        assert!(attr.as_error_code().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!("MessageIntegritySha256(Encodable(EncodableMessageIntegritySha256(HMACKey(HMACKeyPriv { mechanism: ShortTerm, key: [116, 101, 115, 116] }))))", dbg_fmt);
     }
 }

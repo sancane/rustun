@@ -93,3 +93,61 @@ impl From<AlgorithmId> for Algorithm {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn algorithm_id_from_u16() {
+        let algorithm = AlgorithmId::from(0);
+        assert_eq!(algorithm, AlgorithmId::Reserved);
+
+        let algorithm = AlgorithmId::from(1);
+        assert_eq!(algorithm, AlgorithmId::MD5);
+
+        let algorithm = AlgorithmId::from(2);
+        assert_eq!(algorithm, AlgorithmId::SHA256);
+
+        let algorithm = AlgorithmId::from(3);
+        assert_eq!(algorithm, AlgorithmId::Unassigned(3));
+    }
+
+    #[test]
+    fn u16_from_algorithm_id() {
+        let val = u16::from(AlgorithmId::Reserved);
+        assert_eq!(val, 0);
+
+        let val = u16::from(AlgorithmId::MD5);
+        assert_eq!(val, 1);
+
+        let val = u16::from(AlgorithmId::SHA256);
+        assert_eq!(val, 2);
+
+        let val = u16::from(AlgorithmId::Unassigned(3));
+        assert_eq!(val, 3);
+    }
+
+    #[test]
+    fn display_algorithm_id() {
+        let out = format!("{}", AlgorithmId::Reserved);
+        assert_eq!("reserved", out);
+
+        let out = format!("{}", AlgorithmId::MD5);
+        assert_eq!("md5", out);
+
+        let out = format!("{}", AlgorithmId::SHA256);
+        assert_eq!("sha256", out);
+
+        let out = format!("{}", AlgorithmId::Unassigned(3));
+        assert_eq!("unassigned(3)", out);
+    }
+
+    #[test]
+    fn algorithm() {
+        let algorithm_1 = Algorithm::from(AlgorithmId::MD5);
+        let algorithm_2 = Algorithm::new(AlgorithmId::MD5, None);
+
+        assert_eq!(algorithm_1, algorithm_2);
+    }
+}

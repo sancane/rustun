@@ -167,6 +167,7 @@ stunt_attribute!(UserName, USER_NAME);
 mod tests {
     use super::*;
     use crate::error::StunErrorType;
+    use crate::StunAttribute;
 
     #[test]
     fn user_name_constructor() {
@@ -298,5 +299,18 @@ mod tests {
             result.expect_err("Error expected"),
             StunErrorType::SmallBuffer
         );
+    }
+
+    #[test]
+    fn user_name_stunt_attribute() {
+        let attr = StunAttribute::UserName(
+            UserName::try_from("test").expect("Can not create UserName attribute"),
+        );
+        assert!(attr.is_user_name());
+        assert!(attr.as_user_name().is_ok());
+        assert!(attr.as_unknown().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!("UserName(UserName(\"test\"))", dbg_fmt);
     }
 }

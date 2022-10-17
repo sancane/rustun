@@ -129,6 +129,7 @@ mod tests {
     use super::*;
     use crate::attributes::stun::{Realm, UserName};
     use crate::error::StunErrorType;
+    use crate::StunAttribute;
     use std::convert::TryFrom;
 
     #[test]
@@ -243,5 +244,17 @@ mod tests {
             result.expect_err("Error expected"),
             StunErrorType::SmallBuffer
         );
+    }
+
+    #[test]
+    fn user_hash_stunt_attribute() {
+        let user_hash = UserHash::new("a", "b").expect("Can not create user hash");
+        let attr = StunAttribute::UserHash(user_hash);
+        assert!(attr.is_user_hash());
+        assert!(attr.as_user_hash().is_ok());
+        assert!(attr.as_unknown().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!("UserHash(UserHash([103, 131, 163, 30, 171, 246, 140, 204, 6, 96, 249, 53, 192, 130, 98, 130, 189, 210, 36, 31, 58, 128, 169, 242, 209, 13, 89, 174, 169, 235, 181, 216]))", dbg_fmt);
     }
 }

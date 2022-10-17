@@ -3,9 +3,10 @@ use stun_rs::attributes::stun::{
     Fingerprint, MessageIntegrity, MessageIntegritySha256, Nonce, Realm, Software, UserHash,
     UserName, XorMappedAddress,
 };
+use stun_rs::error::StunErrorLevel;
 use stun_rs::{
-    Algorithm, AlgorithmId, DecoderContextBuilder, HMACKey, MessageDecoderBuilder,
-    StunAttributeType,
+    Algorithm, AlgorithmId, AttributeType, DecoderContextBuilder, HMACKey, MessageDecoderBuilder,
+    StunAttributeType, StunErrorType,
 };
 
 // 2.1. Sample Request
@@ -234,4 +235,36 @@ fn test_sample_request_with_long_term_auth_sha256() {
         integrity.attribute_type(),
         MessageIntegritySha256::get_type()
     );
+}
+
+#[test]
+fn decode_request_error() {
+    let mut buffer: [u8; 15] = [0x00; 15];
+    buffer.copy_from_slice(&stun_vectors::SAMPLE_REQUEST[..15]);
+
+    let decoder = MessageDecoderBuilder::default().build();
+    let error = decoder.decode(&buffer).expect_err("Buffer is too small");
+    assert!(match &error.0 {
+        StunErrorLevel::Message(e) => e.0 == StunErrorType::SmallBuffer,
+        _ => false,
+    });
+
+    let password = "wrong_password";
+    let ctx = DecoderContextBuilder::default()
+        .with_key(HMACKey::new_short_term(password).expect("Can not create short term credential"))
+        .with_validation()
+        .build();
+    let decoder = MessageDecoderBuilder::default().with_context(ctx).build();
+
+    let error = decoder
+        .decode(&stun_vectors::SAMPLE_REQUEST)
+        .expect_err("Validation must fail");
+    assert!(match &error.0 {
+        StunErrorLevel::Attribute(e) => {
+            e.attr_type == Some(AttributeType::new(0x0008))
+                && e.position == 4
+                && e.error == StunErrorType::ValidationFailed
+        }
+        _ => false,
+    });
 }

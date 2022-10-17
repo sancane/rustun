@@ -17,3 +17,20 @@ crate::common::integer_attribute!(
     PRIORITY,
     u32,
 );
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::StunAttribute;
+
+    #[test]
+    fn priority_stunt_attribute() {
+        let attr = StunAttribute::Priority(Priority::from(1234));
+        assert!(attr.is_priority());
+        assert!(attr.as_priority().is_ok());
+        assert!(attr.as_error_code().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!("Priority(Priority(1234))", dbg_fmt);
+    }
+}
