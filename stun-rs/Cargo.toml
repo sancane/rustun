@@ -18,7 +18,7 @@ stun-vectors = { path = "../stun-vectors" }
 [dependencies]
 bounded-integer = { version = "0.5.2", features = ["types"] }
 byteorder = "1"
-crc = "2.1.0"
+crc = "3.0.0"
 fallible-iterator = "0.2.0"
 hmac-sha1 = "0.1"
 hmac-sha256 = "1.1.2"
