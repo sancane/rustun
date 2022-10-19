@@ -296,7 +296,7 @@ macro_rules! xor_socket_addr_attribute {
 pub(crate) use xor_socket_addr_attribute;
 
 #[cfg(any(feature = "ice", feature = "turn"))]
-// Creates a STUN attribute which contains an `SocketAddr` field.
+// Creates a STUN attribute that does not contain anything.
 macro_rules! empty_attribute {
     (
         $(#[$meta:meta])*
