@@ -36,8 +36,9 @@ pub struct MessageHeader<'a> {
 impl<'a> PartialEq for MessageHeader<'a> {
     fn eq(&self, other: &Self) -> bool {
         self.msg_type == other.msg_type
-            && self.cookie != other.cookie
-            && self.transaction_id != other.transaction_id
+            && self.msg_length == other.msg_length
+            && self.cookie == other.cookie
+            && self.transaction_id == other.transaction_id
     }
 }
 
@@ -363,7 +364,13 @@ mod tests {
         // Empty buffer
         let buffer = [];
         let raw_attr = RawAttributes::from(&buffer[..]);
+        // check debug is implemented
+        format!("{:?}", raw_attr);
+
         let mut iter = raw_attr.into_fallible_iter();
+        // check debug is implemented
+        format!("{:?}", iter);
+
         assert_eq!(iter.next(), Ok(None));
 
         let buffer = [
@@ -461,6 +468,43 @@ mod tests {
             iter.next().expect_err("Error expected"),
             StunErrorType::SmallBuffer
         );
+
+        let buffer = [
+            0x00, 0x1e, 0x00, 0x20, // `USERHASH` attribute header
+            0x4A, 0x3C, 0xF3, 0x8F, // }
+            0xEF, 0x69, 0x92, 0xBD, // }
+            0xA9, 0x52, 0xC6, 0x78, // }
+            0x04, 0x17, 0xDA, 0x0F, // }  `Userhash` value (32 bytes)
+            0x24, 0x81, 0x94, 0x15, // }
+            0x56, 0x9E, 0x60, 0xB2, // }
+            0x05, 0xC4, 0x6E, 0x41, // }
+            0x40, 0x7F, 0x17, 0x04, // }
+            0x00, 0x15, 0x00, 0x29, // NONCE attribute header
+            0x6F, 0x62, 0x4D, 0x61, // }
+            0x74, 0x4A, 0x6F, 0x73, // }
+            0x32, 0x41, 0x41, 0x41, // }
+            0x43, 0x66, 0x2F, 0x2F, // }
+            0x34, 0x39, 0x39, 0x6B, // }  Nonce value and padding (Miss 3 padding bytes)
+            0x39, 0x35, 0x34, 0x64, // }
+            0x36, 0x4F, 0x4C, 0x33, // }
+            0x34, 0x6F, 0x4C, 0x39, // }
+            0x46, 0x53, 0x54, 0x76, // }
+            0x79, 0x36, 0x34, 0x73, // }
+            0x41, // }
+        ];
+        let raw_attr = RawAttributes::from(&buffer[..]);
+        let mut iter = raw_attr.into_fallible_iter();
+
+        // Consume `UserHash`
+        iter.next()
+            .expect("Unexpected error decoding raw attribute")
+            .expect("Expected UserHash attribute");
+
+        // NONCE value misses last 3 bytes
+        assert_eq!(
+            iter.next().expect_err("Error expected"),
+            StunErrorType::SmallBuffer
+        );
     }
 
     #[test]
@@ -494,5 +538,63 @@ mod tests {
         assert_eq!(input.len(), 72);
         assert_eq!(input[..4], [0x01, 0x01, 0x00, 0x3c]);
         assert_eq!(input[4..], stun_vectors::SAMPLE_IPV4_RESPONSE[4..72]);
+    }
+
+    #[test]
+    fn test_message_header() {
+        let (header, size) = MessageHeader::decode(&stun_vectors::SAMPLE_REQUEST)
+            .expect("Can not parse STUN header");
+        assert_eq!(size, MESSAGE_HEADER_SIZE);
+        assert_eq!(header.msg_type, 0x01);
+        assert_eq!(header.msg_length, 0x058);
+        assert_eq!(header.cookie, &[0x21, 0x12, 0xa4, 0x42]);
+        assert_eq!(
+            header.transaction_id,
+            &[0xb7, 0xe7, 0xa7, 0x01, 0xbc, 0x34, 0xd6, 0x86, 0xfa, 0x87, 0xdf, 0xae]
+        );
+
+        format!("{:?}", header);
+
+        let (header2, _size) = MessageHeader::decode(&stun_vectors::SAMPLE_REQUEST)
+            .expect("Can not parse STUN header");
+        assert_eq!(header, header2);
+
+        let (header3, size) = MessageHeader::decode(&stun_vectors::SAMPLE_REQUEST_LONG_TERM_AUTH)
+            .expect("Can not parse STUN header");
+        assert_eq!(size, MESSAGE_HEADER_SIZE);
+        assert_ne!(header3, header2);
+    }
+
+    #[test]
+    fn test_raw_messager() {
+        let (raw_msg1, size) =
+            RawMessage::decode(&stun_vectors::SAMPLE_REQUEST).expect("Can not parse STUN message");
+        assert_eq!(size, stun_vectors::SAMPLE_REQUEST.len());
+
+        format!("{:?}", raw_msg1);
+
+        let (raw_msg2, size) = RawMessage::decode(&stun_vectors::SAMPLE_REQUEST_LONG_TERM_AUTH)
+            .expect("Can not parse STUN message");
+        assert_eq!(size, stun_vectors::SAMPLE_REQUEST_LONG_TERM_AUTH.len());
+
+        assert_ne!(raw_msg1, raw_msg2);
+
+        let (raw_msg3, size) =
+            RawMessage::decode(&stun_vectors::SAMPLE_REQUEST).expect("Can not parse STUN message");
+        assert_eq!(size, stun_vectors::SAMPLE_REQUEST.len());
+
+        assert_eq!(raw_msg1, raw_msg3);
+
+        let mut buffer: [u8; 108] = [0x00; 108];
+        buffer.copy_from_slice(&stun_vectors::SAMPLE_REQUEST);
+        // Change padding values
+        buffer[73] = 0xa1;
+        buffer[74] = 0xff;
+        buffer[75] = 0xed;
+        let (raw_msg4, size) = RawMessage::decode(&buffer).expect("Can not parse STUN message");
+        assert_eq!(size, buffer.len());
+
+        // Padding are not taking into account for comparision
+        assert_eq!(raw_msg1, raw_msg4);
     }
 }

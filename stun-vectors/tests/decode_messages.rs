@@ -1,4 +1,4 @@
-use stun_rs::attributes::ice::{IceControlled, Priority};
+use stun_rs::attributes::ice::{IceControlled, Priority, UseCandidate};
 use stun_rs::attributes::stun::{
     Fingerprint, MessageIntegrity, MessageIntegritySha256, Nonce, Realm, Software, UserHash,
     UserName, XorMappedAddress,
@@ -267,4 +267,27 @@ fn decode_request_error() {
         }
         _ => false,
     });
+}
+
+#[test]
+fn decode_request() {
+    let simple_request = [
+        0x00, 0x01, 0x00, 0x04, // Request type and message length
+        0x21, 0x12, 0xa4, 0x42, // Magic cookie
+        0xb7, 0xe7, 0xa7, 0x01, // }
+        0xbc, 0x34, 0xd6, 0x86, // }  Transaction ID
+        0xfa, 0x87, 0xdf, 0xae, // }
+        0x00, 0x25, 0x00, 0x00, // } Use candidate
+    ];
+
+    let decoder = MessageDecoderBuilder::default().build();
+    let (msg, size) = decoder
+        .decode(&simple_request)
+        .expect("Can not decode StunMessage");
+    assert_eq!(size, simple_request.len());
+
+    assert!(msg
+        .get::<UseCandidate>()
+        .ok_or("Use candidate attribute not found")
+        .is_ok());
 }
