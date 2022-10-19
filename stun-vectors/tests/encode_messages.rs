@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::str::FromStr;
-use stun_rs::attributes::ice::{IceControlled, Priority};
+use stun_rs::attributes::ice::{IceControlled, Priority, UseCandidate};
 use stun_rs::attributes::stun::{
     Fingerprint, MessageIntegrity, MessageIntegritySha256, Nonce, Realm, Software, UserHash,
     UserName, XorMappedAddress,
@@ -274,4 +274,19 @@ fn encode_request_error() {
         }
         _ => false,
     });
+}
+
+#[test]
+fn encode_request() {
+    let msg = StunMessageBuilder::new(BINDING, MessageClass::Request)
+        .with_attribute(UseCandidate::default())
+        .build();
+
+    let encoder = MessageEncoderBuilder::default().build();
+
+    let mut buffer: [u8; 24] = [0x00; 24];
+    let size = encoder
+        .encode(&mut buffer, &msg)
+        .expect("Can not encode stun message");
+    assert_eq!(size, 24);
 }

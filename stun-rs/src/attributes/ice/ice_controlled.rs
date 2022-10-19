@@ -23,8 +23,29 @@ mod tests {
     use crate::StunAttribute;
 
     #[test]
+    fn integer_attribute() {
+        let attr = IceControlled::new(1234);
+        assert_eq!(attr, 1234);
+        assert_eq!(1234, attr);
+
+        let attr2 = IceControlled::from(1234);
+        assert_eq!(attr, attr2);
+
+        let attr3 = IceControlled::from(5678);
+        assert_ne!(attr, attr3);
+
+        assert!(attr < 5555);
+        assert!(attr > 1000);
+        assert!(5555 > attr);
+        assert!(1000 < attr);
+
+        assert_eq!(attr.as_ref(), &1234);
+        assert_eq!(attr.partial_cmp(&1234), Some(std::cmp::Ordering::Equal));
+    }
+
+    #[test]
     fn ice_controlled_stunt_attribute() {
-        let attr = StunAttribute::IceControlled(IceControlled::from(1234));
+        let attr = StunAttribute::IceControlled(IceControlled::new(1234));
         assert!(attr.is_ice_controlled());
         assert!(attr.as_ice_controlled().is_ok());
         assert!(attr.as_error_code().is_err());

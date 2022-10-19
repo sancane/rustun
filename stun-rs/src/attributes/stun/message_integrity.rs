@@ -45,8 +45,8 @@ mod tests {
     use super::*;
     use crate::attributes::{EncodeAttributeValue, Verifiable};
     use crate::context::AttributeEncoderContext;
-    use crate::StunAttribute;
     use crate::{Algorithm, AlgorithmId, DecoderContextBuilder, HMACKey};
+    use crate::{StunAttribute, StunErrorType};
 
     #[test]
     fn encode_message_integrity_with_short_term() {
@@ -80,6 +80,20 @@ mod tests {
             .expect("Could not encode MessageIntegrty");
 
         assert_eq!(output, hmac_hash);
+
+        // Can not encode a decodable value
+        let ctx = AttributeEncoderContext::new(None, &input, &mut output);
+        let attr = MessageIntegrity::from(&hmac_hash);
+        let error = attr
+            .encode(ctx)
+            .expect_err("Could not encode Decodable attribute");
+        assert_eq!(error, StunErrorType::InvalidParam);
+
+        let ctx = AttributeEncoderContext::new(None, &input, &mut output);
+        let error = attr
+            .post_encode(ctx)
+            .expect_err("Could not encode Decodable attribute");
+        assert_eq!(error, StunErrorType::InvalidParam);
     }
 
     #[test]
@@ -133,13 +147,39 @@ mod tests {
             0xba, 0x53, 0xf0, 0x6b, 0xe7, 0xd7,
         ];
 
-        let attr = MessageIntegrity::from(hmac_hash);
+        let attr = MessageIntegrity::from(&hmac_hash);
+        format!("{:?}", attr);
+
         let password = "VOkJxbRl1RmTxUk/WvJxBt";
         let key = HMACKey::new_short_term(password).expect("Could not create HMACKey");
 
         let ctx = DecoderContextBuilder::default().with_key(key).build();
 
         assert!(attr.verify(&input, &ctx));
+    }
+
+    #[test]
+    fn validation_error() {
+        let input = crate::get_input_text::<MessageIntegrity>(&stun_vectors::SAMPLE_IPV4_RESPONSE)
+            .expect("Can not get input buffer");
+        let hmac_hash = [
+            0x2b, 0x91, 0xf5, 0x99, 0xfd, 0x9e, 0x90, 0xc3, 0x8c, 0x74, 0x89, 0xf9, 0x2a, 0xf9,
+            0xba, 0x53, 0xf0, 0x6b, 0xe7, 0xd7,
+        ];
+
+        let attr = MessageIntegrity::from(&hmac_hash);
+        format!("{:?}", attr);
+
+        // Validation fail without key
+        let ctx = DecoderContextBuilder::default().build();
+        assert!(!attr.verify(&input, &ctx));
+
+        let input: [u8; 48] = [0xff; 48];
+        let password = "VOkJxbRl1RmTxUk/WvJxBt";
+        let key = HMACKey::new_short_term(password).expect("Could not create HMACKey");
+        let attr = MessageIntegrity::new(key);
+        let ctx = DecoderContextBuilder::default().build();
+        assert!(!attr.verify(&input, &ctx));
     }
 
     #[test]
