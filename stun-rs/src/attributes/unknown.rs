@@ -150,4 +150,18 @@ mod tests {
             StunErrorType::InvalidParam
         );
     }
+
+    #[test]
+    fn unknown_stunt_attribute() {
+        let attr = StunAttribute::Unknown(Unknown::new(AttributeType::from(0x1234), None));
+        assert!(attr.is_unknown());
+        assert!(attr.as_unknown().is_ok());
+        assert!(attr.as_error_code().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!(
+            "Unknown(Unknown { attr_type: AttributeType (0x1234), attr_data: None })",
+            dbg_fmt
+        );
+    }
 }

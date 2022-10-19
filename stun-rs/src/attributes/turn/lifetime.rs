@@ -18,3 +18,20 @@ crate::common::integer_attribute!(
     LIFETIME,
     u32,
 );
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::StunAttribute;
+
+    #[test]
+    fn lifetime_stunt_attribute() {
+        let attr = StunAttribute::LifeTime(LifeTime::from(1234));
+        assert!(attr.is_life_time());
+        assert!(attr.as_life_time().is_ok());
+        assert!(attr.as_unknown().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!("LifeTime(LifeTime(1234))", dbg_fmt);
+    }
+}

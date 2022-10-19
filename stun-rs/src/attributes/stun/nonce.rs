@@ -188,6 +188,7 @@ stunt_attribute!(Nonce, NONCE);
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::StunAttribute;
 
     #[test]
     fn constructor() {
@@ -291,5 +292,17 @@ mod tests {
             result.expect_err("Error expected"),
             StunErrorType::SmallBuffer
         );
+    }
+
+    #[test]
+    fn nonce_stunt_attribute() {
+        let attr =
+            StunAttribute::Nonce(Nonce::try_from("test").expect("Can not create Nonce attribute"));
+        assert!(attr.is_nonce());
+        assert!(attr.as_nonce().is_ok());
+        assert!(attr.as_unknown().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!("Nonce(Nonce(QuotedString(\"test\")))", dbg_fmt);
     }
 }

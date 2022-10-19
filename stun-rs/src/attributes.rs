@@ -273,7 +273,7 @@ stunt_attribute_impl!(
     (EvenPort, turn, "turn"),
     (DontFragment, turn, "turn"),
     (RequestedTrasport, turn, "turn"),
-    (AddtionalAddressFamily, turn, "turn"),
+    (AdditionalAddressFamily, turn, "turn"),
     (ReservationToken, turn, "turn"),
     (AddressErrorCode, turn, "turn"),
     (Icmp, turn, "turn")
@@ -281,6 +281,7 @@ stunt_attribute_impl!(
 
 #[cfg(test)]
 mod tests {
+    use super::AttributeType;
     use crate::common::check_buffer_boundaries;
     use crate::error::StunErrorType;
 
@@ -302,5 +303,14 @@ mod tests {
             check_buffer_boundaries(&buffer, 2).expect_err("Error expected"),
             StunErrorType::SmallBuffer
         );
+    }
+
+    #[test]
+    fn fmt_attribute_type() {
+        let attr_str = format!("{:?}", AttributeType::from(0x1234));
+        assert_eq!("AttributeType (0x1234)", attr_str);
+
+        let attr_str = format!("{}", AttributeType::from(0x1234));
+        assert_eq!("attribute type (0x1234)", attr_str);
     }
 }

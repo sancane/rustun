@@ -26,7 +26,8 @@ mod tests {
     use super::*;
     use crate::common::{xor_decode, xor_encode};
     use crate::types::TRANSACTION_ID_SIZE;
-    use std::net::SocketAddr;
+    use crate::StunAttribute;
+    use std::net::{IpAddr, Ipv4Addr, SocketAddr};
     use std::str::FromStr;
 
     fn transaction_id() -> [u8; TRANSACTION_ID_SIZE] {
@@ -116,5 +117,20 @@ mod tests {
             0xbe, 0xd2, 0xb9, 0xd9, // }
         ];
         assert_eq!(&buffer[..], &xor_buffer[..]);
+    }
+
+    #[test]
+    fn xor_mapped_address_stunt_attribute() {
+        let socket = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), 8080);
+        let attr = StunAttribute::XorMappedAddress(XorMappedAddress::from(socket));
+        assert!(attr.is_xor_mapped_address());
+        assert!(attr.as_xor_mapped_address().is_ok());
+        assert!(attr.as_error_code().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!(
+            "XorMappedAddress(XorMappedAddress(127.0.0.1:8080))",
+            dbg_fmt
+        );
     }
 }

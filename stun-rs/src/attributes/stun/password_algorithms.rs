@@ -132,6 +132,7 @@ stunt_attribute!(PasswordAlgorithms, PASSWORD_ALGORITHMS);
 mod tests {
     use super::*;
     use crate::error::StunErrorType;
+    use crate::StunAttribute;
     use crate::{Algorithm, AlgorithmId};
 
     #[test]
@@ -373,6 +374,20 @@ mod tests {
         assert_eq!(
             result.expect_err("Error expected"),
             StunErrorType::SmallBuffer
+        );
+    }
+
+    #[test]
+    fn password_algorithms_attribute() {
+        let attr = StunAttribute::PasswordAlgorithms(PasswordAlgorithms::default());
+        assert!(attr.is_password_algorithms());
+        assert!(attr.as_password_algorithms().is_ok());
+        assert!(attr.as_unknown().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!(
+            "PasswordAlgorithms(PasswordAlgorithms { algorithms: [] })",
+            dbg_fmt
         );
     }
 }

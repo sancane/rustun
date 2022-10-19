@@ -64,6 +64,7 @@ stunt_attribute!(ChannelNumber, CHANNEL_NUMBER);
 mod tests {
     use super::*;
     use crate::error::StunErrorType;
+    use crate::StunAttribute;
 
     #[test]
     fn decode_channel_number_value() {
@@ -119,5 +120,19 @@ mod tests {
 
         let expected_buffer = [0xab, 0xf1, 0x00, 0x00];
         assert_eq!(&buffer[..], &expected_buffer[..]);
+    }
+
+    #[test]
+    fn channes_numbers_stunt_attribute() {
+        let attr = StunAttribute::ChannelNumber(ChannelNumber::new(1234));
+        assert!(attr.is_channel_number());
+        assert!(attr.as_channel_number().is_ok());
+        assert!(attr.as_error_code().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!(
+            "ChannelNumber(ChannelNumber { number: 1234, rffu: 0 })",
+            dbg_fmt
+        );
     }
 }

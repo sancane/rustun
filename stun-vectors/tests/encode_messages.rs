@@ -6,10 +6,11 @@ use stun_rs::attributes::stun::{
     Fingerprint, MessageIntegrity, MessageIntegritySha256, Nonce, Realm, Software, UserHash,
     UserName, XorMappedAddress,
 };
+use stun_rs::error::StunErrorLevel;
 use stun_rs::methods::BINDING;
 use stun_rs::{
-    Algorithm, AlgorithmId, EncoderContextBuilder, HMACKey, MessageClass, MessageEncoderBuilder,
-    StunMessageBuilder, StunPadding, TransactionId,
+    Algorithm, AlgorithmId, AttributeType, EncoderContextBuilder, HMACKey, MessageClass,
+    MessageEncoderBuilder, StunErrorType, StunMessageBuilder, StunPadding, TransactionId,
 };
 use stun_vectors::{
     SAMPLE_IPV4_RESPONSE, SAMPLE_IPV6_RESPONSE, SAMPLE_REQUEST, SAMPLE_REQUEST_LONG_TERM_AUTH,
@@ -223,4 +224,54 @@ fn test_sample_request_with_long_term_sha256() {
 
     // Check that both vectors are equal
     assert_eq!(buffer[..size], SAMPLE_REQUEST_LONG_TERM_AUTH_SHA256)
+}
+
+#[test]
+fn encode_request_error() {
+    let nonce = Nonce::try_from("nonce").expect("Expected QuotedString");
+
+    let msg = StunMessageBuilder::new(BINDING, MessageClass::Request)
+        .with_attribute(nonce)
+        .build();
+
+    let encoder = MessageEncoderBuilder::default().build();
+
+    // No room for stun header
+    let mut buffer: [u8; 10] = [0x00; 10];
+    let error = encoder
+        .encode(&mut buffer, &msg)
+        .expect_err("Expected small buffer error");
+    assert!(matches!(error.0, StunErrorLevel::Message(_)));
+    assert!(match &error.0 {
+        StunErrorLevel::Message(e) => e.0 == StunErrorType::SmallBuffer,
+        _ => false,
+    });
+
+    // No room for Nonce attribute type
+    let mut buffer: [u8; 21] = [0x00; 21];
+    let error = encoder
+        .encode(&mut buffer, &msg)
+        .expect_err("Expected small buffer error");
+    assert!(match &error.0 {
+        StunErrorLevel::Attribute(e) => {
+            e.attr_type == Some(AttributeType::new(0x0015))
+                && e.position == 0
+                && e.error == StunErrorType::SmallBuffer
+        }
+        _ => false,
+    });
+
+    // No room for padding (32 bytes required)
+    let mut buffer: [u8; 31] = [0x00; 31];
+    let error = encoder
+        .encode(&mut buffer, &msg)
+        .expect_err("Expected small buffer error");
+    assert!(match &error.0 {
+        StunErrorLevel::Attribute(e) => {
+            e.attr_type == Some(AttributeType::new(0x0015))
+                && e.position == 0
+                && e.error == StunErrorType::SmallBuffer
+        }
+        _ => false,
+    });
 }

@@ -143,6 +143,7 @@ stunt_attribute!(Fingerprint, FINGERPRINT);
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::StunAttribute;
     use crate::{
         attributes::{EncodeAttributeValue, Verifiable},
         DecoderContextBuilder,
@@ -181,5 +182,16 @@ mod tests {
 
         let ctx = DecoderContextBuilder::default().build();
         assert!(fingerprint.verify(&input, &ctx));
+    }
+
+    #[test]
+    fn fingerprint_stunt_attribute() {
+        let attr = StunAttribute::Fingerprint(Fingerprint::default());
+        assert!(attr.is_fingerprint());
+        assert!(attr.as_fingerprint().is_ok());
+        assert!(attr.as_unknown().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!("Fingerprint(Encodable(EncodableFingerprint))", dbg_fmt);
     }
 }

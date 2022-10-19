@@ -209,3 +209,135 @@ impl fmt::Display for StunEncodeError {
 }
 
 impl error::Error for StunEncodeError {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::convert::{TryFrom, TryInto};
+    use std::error::Error;
+
+    #[test]
+    fn display_stun_error_type() {
+        assert_eq!(
+            "invalid parameter",
+            format!("{}", StunErrorType::InvalidParam)
+        );
+        assert_eq!(
+            "validation failed",
+            format!("{}", StunErrorType::ValidationFailed)
+        );
+        assert_eq!(
+            "value is too long",
+            format!("{}", StunErrorType::ValueTooLong)
+        );
+        assert_eq!(
+            "small input buffer",
+            format!("{}", StunErrorType::SmallBuffer)
+        );
+    }
+
+    #[test]
+    fn stun_error() {
+        let error = StunError::new(StunErrorType::InvalidParam, "Test message");
+        assert_eq!(error, StunErrorType::InvalidParam);
+        assert_eq!(StunErrorType::InvalidParam, error);
+        assert!(error.source().is_none());
+        assert_eq!(
+            "StunError { error_type: InvalidParam, info: Text(\"Test message\") }",
+            format!("{:?}", error)
+        );
+        assert_eq!("invalid parameter. Test message", format!("{}", error));
+
+        {
+            let error2 = StunError::new(StunErrorType::InvalidParam, "Test message 2");
+            assert_eq!(error, error2);
+        }
+
+        let precis_error = crate::strings::opaque_string_enforce("\u{0009}")
+            .expect_err("character TAB `U+0009` is disallowed");
+        let error = StunError::from(precis_error);
+        assert!(error.source().is_some());
+        println!("{}", error);
+        println!("{:?}", error);
+
+        let input: u16 = 256;
+        let result: Result<u8, std::num::TryFromIntError> = input.try_into();
+        let int_error = result.expect_err("Conversion from u16 to u8 did not fail");
+        let error = StunError::from(int_error);
+        assert!(error.source().is_some());
+        println!("{}", error);
+        println!("{:?}", error);
+
+        let buff = [0, 1, 2];
+        let result: Result<&[u8; 2], std::array::TryFromSliceError> =
+            <&[u8; 2]>::try_from(&buff[2..]);
+        let slice_error = result.expect_err("Expected slice error");
+        let error = StunError::from(slice_error);
+        assert!(error.source().is_some());
+        println!("{}", error);
+        println!("{:?}", error);
+
+        // some invalid bytes, in a vector
+        let buffer = vec![0, 159, 146, 150];
+        // std::str::from_utf8 returns a Utf8Error
+        let utf8_error = std::str::from_utf8(&buffer).expect_err("Expected utf8 error");
+        let error = StunError::from(utf8_error);
+        assert!(error.source().is_some());
+        println!("{}", error);
+        println!("{:?}", error);
+    }
+
+    #[test]
+    fn stun_attribute_error() {
+        let error = StunAttributeError {
+            attr_type: None,
+            position: 0,
+            error: StunError::new(StunErrorType::InvalidParam, "Test message"),
+        };
+        println!("{}", error);
+        println!("{:?}", error);
+
+        let error = StunAttributeError {
+            attr_type: Some(AttributeType::new(0x1234)),
+            position: 0,
+            error: StunError::new(StunErrorType::InvalidParam, "Test message"),
+        };
+        println!("{}", error);
+        println!("{:?}", error);
+    }
+
+    #[test]
+    fn stun_error_level() {
+        let error = StunErrorLevel::Message(StunMessageError(StunError::new(
+            StunErrorType::InvalidParam,
+            "Test message",
+        )));
+        println!("{}", error);
+        println!("{:?}", error);
+
+        let error = StunErrorLevel::Attribute(StunAttributeError {
+            attr_type: Some(AttributeType::new(0x1234)),
+            position: 0,
+            error: StunError::new(StunErrorType::InvalidParam, "Test message"),
+        });
+        println!("{}", error);
+        println!("{:?}", error);
+    }
+
+    #[test]
+    fn stun_encode_decode_error() {
+        let error = StunEncodeError(StunErrorLevel::Message(StunMessageError(StunError::new(
+            StunErrorType::InvalidParam,
+            "Test message",
+        ))));
+        println!("{}", error);
+        println!("{:?}", error);
+
+        let error = StunDecodeError(StunErrorLevel::Message(StunMessageError(StunError::new(
+            StunErrorType::InvalidParam,
+            "Test message",
+        ))));
+        println!("{}", error);
+        println!("{:?}", error);
+    }
+}

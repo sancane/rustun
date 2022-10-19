@@ -72,6 +72,7 @@ stunt_attribute!(EvenPort, EVEN_PORT);
 mod tests {
     use super::*;
     use crate::error::StunErrorType;
+    use crate::StunAttribute;
 
     #[test]
     fn even_port_constructor() {
@@ -142,5 +143,16 @@ mod tests {
         assert_eq!(result, Ok(1));
         let expected_buffer = [0x00];
         assert_eq!(&buffer[..], &expected_buffer[..]);
+    }
+
+    #[test]
+    fn even_port_stunt_attribute() {
+        let attr = StunAttribute::EvenPort(EvenPort::new(true));
+        assert!(attr.is_even_port());
+        assert!(attr.as_even_port().is_ok());
+        assert!(attr.as_error_code().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!("EvenPort(EvenPort(true))", dbg_fmt);
     }
 }

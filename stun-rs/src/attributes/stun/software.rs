@@ -172,6 +172,7 @@ stunt_attribute!(Software, SOFTWARE);
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::StunAttribute;
 
     #[test]
     fn constructor() {
@@ -218,5 +219,18 @@ mod tests {
             Software::decode(ctx).expect_err("Error expected"),
             StunErrorType::ValueTooLong
         );
+    }
+
+    #[test]
+    fn software_stunt_attribute() {
+        let attr = StunAttribute::Software(
+            Software::new("test").expect("Can not create Software attribute"),
+        );
+        assert!(attr.is_software());
+        assert!(attr.as_software().is_ok());
+        assert!(attr.as_unknown().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!("Software(Software(\"test\"))", dbg_fmt);
     }
 }

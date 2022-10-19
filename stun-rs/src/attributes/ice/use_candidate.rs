@@ -16,3 +16,20 @@ crate::common::empty_attribute!(
     UseCandidate,
     USE_CANDIDATE,
 );
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::StunAttribute;
+
+    #[test]
+    fn use_candidate_stunt_attribute() {
+        let attr = StunAttribute::UseCandidate(UseCandidate::default());
+        assert!(attr.is_use_candidate());
+        assert!(attr.as_use_candidate().is_ok());
+        assert!(attr.as_error_code().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!("UseCandidate(UseCandidate)", dbg_fmt);
+    }
+}

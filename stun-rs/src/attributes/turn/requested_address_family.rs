@@ -23,6 +23,7 @@ mod tests {
     use crate::context::{AttributeDecoderContext, AttributeEncoderContext};
     use crate::error::StunErrorType;
     use crate::AddressFamily;
+    use crate::StunAttribute;
 
     #[test]
     fn decode_requested_address_family_constructor() {
@@ -102,5 +103,20 @@ mod tests {
         assert_eq!(result, Ok(4));
         let expected_buffer = [0x02, 0x00, 0x00, 0x00];
         assert_eq!(&buffer[..], &expected_buffer[..]);
+    }
+
+    #[test]
+    fn requested_address_family_stunt_attribute() {
+        let attr =
+            StunAttribute::RequestedAddressFamily(RequestedAddressFamily::new(AddressFamily::IPv6));
+        assert!(attr.is_requested_address_family());
+        assert!(attr.as_requested_address_family().is_ok());
+        assert!(attr.as_unknown().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!(
+            "RequestedAddressFamily(RequestedAddressFamily(IPv6))",
+            dbg_fmt
+        );
     }
 }

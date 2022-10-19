@@ -120,6 +120,7 @@ stunt_attribute!(UnknownAttributes, UNKNOWN_ATTRIBUTES);
 mod tests {
     use super::*;
     use crate::error::StunErrorType;
+    use crate::StunAttribute;
 
     #[test]
     fn constructor() {
@@ -225,6 +226,20 @@ mod tests {
         assert_eq!(
             result.expect_err("Error expected"),
             StunErrorType::SmallBuffer
+        );
+    }
+
+    #[test]
+    fn unknown_attributes_stunt_attribute() {
+        let attr = StunAttribute::UnknownAttributes(UnknownAttributes::default());
+        assert!(attr.is_unknown_attributes());
+        assert!(attr.as_unknown_attributes().is_ok());
+        assert!(attr.as_unknown().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!(
+            "UnknownAttributes(UnknownAttributes { attrs: [] })",
+            dbg_fmt
         );
     }
 }

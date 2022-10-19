@@ -18,7 +18,7 @@ mod xor_peer_address;
 mod xor_relayed_address;
 
 use crate::registry::DecoderRegistry;
-pub use additional_address_family::AddtionalAddressFamily;
+pub use additional_address_family::AdditionalAddressFamily;
 pub use address_error_code::AddressErrorCode;
 pub use channel_number::ChannelNumber;
 pub use data::Data;
@@ -33,7 +33,7 @@ pub use xor_peer_address::XorPeerAddress;
 pub use xor_relayed_address::XorRelayedAddress;
 
 pub(crate) fn turn_register_attributes(registry: &mut DecoderRegistry) {
-    registry.register::<AddtionalAddressFamily>();
+    registry.register::<AdditionalAddressFamily>();
     registry.register::<AddressErrorCode>();
     registry.register::<ChannelNumber>();
     registry.register::<Data>();

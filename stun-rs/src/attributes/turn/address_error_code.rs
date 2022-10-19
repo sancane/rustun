@@ -88,6 +88,7 @@ mod tests {
     use super::*;
     use crate::attributes::{DecodeAttributeValue, EncodeAttributeValue};
     use crate::error::StunErrorType;
+    use crate::StunAttribute;
 
     #[test]
     fn decode_address_error_code() {
@@ -197,5 +198,18 @@ mod tests {
         ];
 
         assert_eq!(&buffer, &expected);
+    }
+
+    #[test]
+    fn address_error_code_stunt_attribute() {
+        let error = ErrorCode::new(533, "test").expect("Can not create error code");
+        let attr =
+            StunAttribute::AddressErrorCode(AddressErrorCode::new(AddressFamily::IPv4, error));
+        assert!(attr.is_address_error_code());
+        assert!(attr.as_address_error_code().is_ok());
+        assert!(attr.as_error_code().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!("AddressErrorCode(AddressErrorCode { family: IPv4, error_code: ErrorCode { error_code: 533, reason: \"test\" } })", dbg_fmt);
     }
 }

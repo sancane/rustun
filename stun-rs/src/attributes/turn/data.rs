@@ -91,6 +91,7 @@ stunt_attribute!(Data, DATA);
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::StunAttribute;
     use crate::StunErrorType;
 
     #[test]
@@ -146,5 +147,16 @@ mod tests {
             result.expect_err("Error expected"),
             StunErrorType::SmallBuffer
         );
+    }
+
+    #[test]
+    fn data_stunt_attribute() {
+        let attr = StunAttribute::Data(Data::new([]));
+        assert!(attr.is_data());
+        assert!(attr.as_data().is_ok());
+        assert!(attr.as_error_code().is_err());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!("Data(Data([]))", dbg_fmt);
     }
 }
