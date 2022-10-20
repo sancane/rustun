@@ -171,6 +171,20 @@ mod tests {
             .expect("Could not encode Fingerprint");
 
         assert_eq!(output, [0xc0, 0x7d, 0x4c, 0x96]);
+
+        // Decodable fingerprint can not be encoded
+        let fingerprint = Fingerprint::from([0xc0, 0x7d, 0x4c, 0x96]);
+        let ctx = AttributeEncoderContext::new(None, input, &mut output);
+        let error = fingerprint
+            .encode(ctx)
+            .expect_err("Expected error to encode a decodable fingerprint");
+        assert_eq!(error, StunErrorType::InvalidParam);
+
+        let ctx = AttributeEncoderContext::new(None, input, &mut output);
+        let error = fingerprint
+            .post_encode(ctx)
+            .expect_err("Expected error to encode a decodable fingerprint");
+        assert_eq!(error, StunErrorType::InvalidParam);
     }
 
     #[test]
@@ -179,9 +193,13 @@ mod tests {
             .expect("Can not get input buffer");
 
         let fingerprint = Fingerprint::from([0xc0, 0x7d, 0x4c, 0x96]);
+        format!("{:?}", fingerprint);
 
         let ctx = DecoderContextBuilder::default().build();
         assert!(fingerprint.verify(&input, &ctx));
+
+        let fingerprint = Fingerprint::default();
+        assert!(!fingerprint.verify(&input, &ctx));
     }
 
     #[test]

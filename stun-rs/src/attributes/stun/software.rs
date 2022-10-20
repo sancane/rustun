@@ -98,12 +98,6 @@ impl PartialEq<str> for Software {
     }
 }
 
-impl PartialEq<Software> for str {
-    fn eq(&self, other: &Software) -> bool {
-        other.as_str().eq(self)
-    }
-}
-
 impl PartialEq<String> for Software {
     fn eq(&self, other: &String) -> bool {
         other.eq(self.as_str())
@@ -179,12 +173,22 @@ mod tests {
         let name = String::from("Test Software v1.0");
         let attr_1 = Software::try_from(&name).expect("Can not create Software attribute");
         let attr_2 = Software::new(&name).expect("Can not create Software attribute");
+        let attr_3 = Software::try_from(name.as_str()).expect("Can not create Software attribute");
+        let attr_4 = Software::try_from(name.clone()).expect("Can not create Software attribute");
 
         assert_eq!(attr_1, name);
         assert_eq!(name, attr_1);
+        assert_eq!(name, attr_3);
+        assert_eq!(name, attr_4);
         assert_eq!(attr_1, "Test Software v1.0");
         assert_eq!("Test Software v1.0", attr_1);
         assert_eq!(attr_1, attr_2);
+
+        let value: &String = attr_1.as_ref();
+        assert!(name.eq(value));
+
+        let value: &str = attr_1.as_ref();
+        assert!(name.eq(value));
 
         let value = "x".repeat(MAX_ENCODED_SIZE);
         let _result = Software::new(value.as_str()).expect("Can not create a Sofware attribute");
@@ -210,13 +214,49 @@ mod tests {
 
         let value = "x".repeat(MAX_DECODED_SIZE);
         let ctx = AttributeDecoderContext::new(None, &dummy_msg, value.as_bytes());
-        let (_nonce, size) = Software::decode(ctx).expect("Can not decode NONCE");
+        let (_nonce, size) = Software::decode(ctx).expect("Can not decode Software");
         assert_eq!(size, MAX_DECODED_SIZE);
 
         let value = "x".repeat(MAX_DECODED_SIZE + 1);
         let ctx = AttributeDecoderContext::new(None, &dummy_msg, value.as_bytes());
         assert_eq!(
             Software::decode(ctx).expect_err("Error expected"),
+            StunErrorType::ValueTooLong
+        );
+    }
+
+    #[test]
+    fn encode_software_value() {
+        let dummy_msg: [u8; 0] = [0x0; 0];
+        let software =
+            Software::try_from("test software").expect("Can not create a Sofware attribute");
+
+        let mut buffer: [u8; 13] = [0x0; 13];
+        let ctx = AttributeEncoderContext::new(None, &dummy_msg, &mut buffer);
+        let result = software.encode(ctx);
+        assert_eq!(result, Ok(13));
+
+        let mut buffer: [u8; MAX_ENCODED_SIZE] = [0x0; MAX_ENCODED_SIZE];
+        let software = Software::try_from("x".repeat(MAX_ENCODED_SIZE))
+            .expect("Can not create a Sofware attribute");
+        let ctx = AttributeEncoderContext::new(None, &dummy_msg, &mut buffer);
+        let result = software.encode(ctx);
+        assert_eq!(result, Ok(MAX_ENCODED_SIZE));
+
+        let mut buffer: [u8; 12] = [0x0; 12];
+        let ctx = AttributeEncoderContext::new(None, &dummy_msg, &mut buffer);
+        let result = software.encode(ctx);
+        assert_eq!(
+            result.expect_err("Error expected"),
+            StunErrorType::SmallBuffer
+        );
+
+        let mut buffer: [u8; MAX_ENCODED_SIZE + 1] = [0x0; MAX_ENCODED_SIZE + 1];
+        let software = Software("x".repeat(MAX_ENCODED_SIZE + 1));
+        let ctx = AttributeEncoderContext::new(None, &dummy_msg, &mut buffer);
+        let result = software.encode(ctx);
+        assert_eq!(
+            result.expect_err("Error expected"),
             StunErrorType::ValueTooLong
         );
     }

@@ -84,12 +84,6 @@ impl PartialEq<str> for Nonce {
     }
 }
 
-impl PartialEq<Nonce> for str {
-    fn eq(&self, other: &Nonce) -> bool {
-        other.as_str().eq(self)
-    }
-}
-
 impl PartialEq<String> for Nonce {
     fn eq(&self, other: &String) -> bool {
         other.eq(self.as_str())
@@ -195,12 +189,20 @@ mod tests {
         let value = String::from("f//499k954d6OL34oL9FSTvy64sA");
         let attr_1 = Nonce::try_from(&value).expect("Can not create a Nonce attribute");
         let attr_2 = Nonce::new(&value).expect("Can not create a Nonce attribute");
+        let attr_3 = Nonce::try_from(value.clone()).expect("Can not create Software attribute");
 
         assert_eq!(attr_1, value);
         assert_eq!(value, attr_1);
         assert_eq!(attr_1, "f//499k954d6OL34oL9FSTvy64sA");
         assert_eq!("f//499k954d6OL34oL9FSTvy64sA", attr_1);
         assert_eq!(attr_1, attr_2);
+        assert_eq!(attr_1, attr_3);
+
+        let val: &String = attr_1.as_ref();
+        assert!(value.eq(val));
+
+        let value: &str = attr_1.as_ref();
+        assert!(value.eq(val));
 
         let value = "x".repeat(MAX_ENCODED_SIZE);
         let _result = Nonce::try_from(&value).expect("Can not create a Nonce attribute");
@@ -278,6 +280,13 @@ mod tests {
 
         let result = nonce.encode(ctx);
         assert_eq!(result, Ok(28));
+
+        let mut buffer: [u8; MAX_ENCODED_SIZE] = [0x0; MAX_ENCODED_SIZE];
+        let nonce = Nonce::try_from("x".repeat(MAX_ENCODED_SIZE))
+            .expect("Can not create a Nonce attribute");
+        let ctx = AttributeEncoderContext::new(None, &dummy_msg, &mut buffer);
+        let result = nonce.encode(ctx);
+        assert_eq!(result, Ok(MAX_ENCODED_SIZE));
     }
 
     #[test]
@@ -291,6 +300,17 @@ mod tests {
         assert_eq!(
             result.expect_err("Error expected"),
             StunErrorType::SmallBuffer
+        );
+
+        let mut buffer: [u8; MAX_ENCODED_SIZE + 1] = [0x0; MAX_ENCODED_SIZE + 1];
+        let str = "x".repeat(MAX_ENCODED_SIZE + 1);
+        let value = QuotedString::try_from(str.as_str()).expect("Expected QuotedString");
+        let nonce = Nonce(value);
+        let ctx = AttributeEncoderContext::new(None, &dummy_msg, &mut buffer);
+        let result = nonce.encode(ctx);
+        assert_eq!(
+            result.expect_err("Error expected"),
+            StunErrorType::ValueTooLong
         );
     }
 
