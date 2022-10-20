@@ -2,7 +2,21 @@
 [![Rust Report Card](https://rust-reportcard.xuri.me/badge/github.com/sancane/rustun)](https://rust-reportcard.xuri.me/report/github.com/sancane/rustun)
 
 # rustun
-Rust implementation for Session Traversal Utilities for NAT (STUN)
+Workspace that contains tools and libraries implemented in Rust for Session Traversal Utilities for NAT (STUN).
+
+## Crate stun-vectors
+
+* [`RFC5769`](https://datatracker.ietf.org/doc/html/rfc5769). Test Vectors for Session Traversal Utilities for NAT (STUN).
+
+## Crate [stun-rs](stun-rs/README.md)
+[![Crates.io](https://img.shields.io/crates/v/stun-rs)](https://crates.io/crates/stun-rs)
+[![Docs](https://img.shields.io/docsrs/stun-rs/latest)](https://docs.rs/stun-rs)
+
+Rust library designed to manipulate STUN messages. It supports:
+
+* [`RFC8489`](https://datatracker.ietf.org/doc/html/rfc8489). Session Traversal Utilities for NAT (STUN).
+* [`RFC8445`](https://datatracker.ietf.org/doc/html/rfc8445). Interactive Connectivity Establishment (ICE).
+* [`RFC8656`](https://datatracker.ietf.org/doc/html/rfc8656). Traversal Using Relays around NAT (TURN)
 
 # Contributing
 
