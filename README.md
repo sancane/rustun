@@ -12,8 +12,8 @@ Patches and feedback are welcome.
 
 If you find this project helpful, you may consider making a donation:
 
-[![Donate with Bitcoin](https://en.cryptobadges.io/badge/micro/1EK28M4ht6qu7xFahTxuquXPzZSjCSGVBM)](https://en.cryptobadges.io/donate/1EK28M4ht6qu7xFahTxuquXPzZSjCSGVBM)
-[![Donate with Ethereum](https://en.cryptobadges.io/badge/micro/0xefa6404e5A50774117fd6204cbD33cf4454c67Fb)](https://en.cryptobadges.io/donate/0xefa6404e5A50774117fd6204cbD33cf4454c67Fb)
+<img src="https://www.bitcoinqrcodemaker.com/api/?style=bitcoin&amp;address=bc1qx258lwvgzlg5zt2xsns2nr75dhvxuzk3wkqmnh" height="150" width="150" alt="Bitcoin QR Code">
+<img src="https://www.bitcoinqrcodemaker.com/api/?style=ethereum&amp;address=0xefa6404e5A50774117fd6204cbD33cf4454c67Fb" height="150" width="150" alt="Ethereum QR Code">
 
 # License
 
