@@ -141,7 +141,7 @@ mod tests {
 
     #[test]
     fn encode_requested_transport_value() {
-        let attr = RequestedTrasport::new(protocols::UDP);
+        let attr = RequestedTrasport::default();
         let dummy_msg = [];
 
         let mut buffer = [];
@@ -161,6 +161,7 @@ mod tests {
         );
 
         let mut buffer: [u8; 4] = [0xFF; 4];
+        let attr = RequestedTrasport::new(protocols::UDP);
         let ctx = AttributeEncoderContext::new(None, &dummy_msg, &mut buffer);
         let result = attr.encode(ctx);
         assert_eq!(result, Ok(4));

@@ -49,6 +49,8 @@ pub(crate) fn get_handler(t: AttributeType) -> Option<&'static DecoderHandler> {
 
 #[cfg(test)]
 mod tests {
+    use crate::attributes::stun::AlternateServer;
+
     use super::*;
 
     #[test]
@@ -74,5 +76,15 @@ mod tests {
 
         assert!(get_handler(0x0000.into()).is_none()); // RESERVED
         assert!(get_handler(0xFFFF.into()).is_none());
+    }
+
+    #[test]
+    #[should_panic]
+    fn resgiter() {
+        let mut registry = DecoderRegistry::default();
+        registry.register::<AlternateServer>();
+
+        // AlternateServer is already registered
+        registry.register::<AlternateServer>();
     }
 }
