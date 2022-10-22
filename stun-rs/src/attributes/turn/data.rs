@@ -96,10 +96,15 @@ mod tests {
 
     #[test]
     fn test_data() {
-        let attr = Data::new([0x00, 0x01, 0x02, 0x03, 0x04, 0x05]);
+        let buffer = [0x00, 0x01, 0x02, 0x03, 0x04, 0x05];
+        let attr = Data::new(buffer);
         // Check deref
         let slice: &[u8] = &attr;
         assert_eq!(slice, attr.as_bytes());
+
+        let attr_1 = Data::from(slice);
+        let attr_2 = Data::from(slice.to_vec());
+        assert_eq!(attr_1, attr_2);
     }
 
     #[test]

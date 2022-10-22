@@ -344,7 +344,7 @@ impl StunMessage {
 
 #[cfg(test)]
 mod tests {
-    use crate::message::*;
+    use crate::{message::*, methods::BINDING};
 
     #[test]
     fn message_class() {
@@ -456,5 +456,19 @@ mod tests {
         let msg_type = MessageType::from(&buffer);
         assert_eq!(msg_type.class(), MessageClass::ErrorResponse);
         assert_eq!(msg_type.method(), method);
+    }
+
+    #[test]
+    fn fmt() {
+        let cls = MessageClass::Request;
+        let method = MessageMethod::try_from(0x0001).expect("Can not create MessageMethod");
+        let msg_type = MessageType::new(method, cls);
+        format!("{:?}", msg_type);
+
+        let builder = StunMessageBuilder::new(BINDING, MessageClass::Request);
+        format!("{:?}", builder);
+
+        let msg = builder.build();
+        format!("{:?}", msg);
     }
 }

@@ -488,6 +488,10 @@ macro_rules! address_port_tests (
                     0x00, 0x01, 0x11, 0xfc, 0x46, 0xc7, 0x80, 0x2e,
                 ];
                 assert_eq!(&buffer[..], &cmp_buffer[..]);
+
+                let socket: &std::net::SocketAddr = attr.as_ref();
+                assert_eq!(socket.ip(), IpAddr::V4(Ipv4Addr::new(70, 199, 128, 46)));
+                assert_eq!(socket.port(), 4604);
             }
 
             #[test]

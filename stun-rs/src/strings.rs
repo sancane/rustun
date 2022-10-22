@@ -22,23 +22,21 @@ fn is_removable_character(c: char) -> bool {
 }
 
 fn skip_trailing_characteres(text: &str) -> Option<usize> {
-    let ret = None;
     for (index, c) in text.chars().rev().enumerate() {
         if !is_removable_character(c) {
             return Some(index);
         }
     }
-    ret
+    None
 }
 
 fn skip_starting_characteres(text: &str) -> Option<usize> {
-    let ret = None;
     for (index, c) in text.chars().enumerate() {
         if !is_removable_character(c) {
             return Some(index);
         }
     }
-    ret
+    None
 }
 
 fn formatted_quoted_string_from(s: &str) -> Result<&str, StunError> {
@@ -58,12 +56,12 @@ fn formatted_quoted_string_from(s: &str) -> Result<&str, StunError> {
         None => return Ok(&s[0..0]),
     };
 
-    let s = match skip_trailing_characteres(s) {
-        Some(pos) => &s[..s.len() - pos],
-        None => s,
-    };
+    let mut res = s;
+    if let Some(pos) = skip_trailing_characteres(s) {
+        res = &s[..s.len() - pos];
+    }
 
-    Ok(s)
+    Ok(res)
 }
 
 /// A string object that meets the grammar for "quoted-string"
@@ -139,6 +137,23 @@ impl Encode for QuotedString {
 #[cfg(test)]
 mod tests {
     use crate::strings::*;
+
+    #[test]
+    fn skip_trailing() {
+        assert_eq!(skip_trailing_characteres(""), None);
+        assert_eq!(skip_trailing_characteres("\u{0d}"), None);
+        assert_eq!(skip_trailing_characteres("\u{0d}a"), Some(0usize));
+        assert_eq!(skip_trailing_characteres("a\u{0d}"), Some(1usize));
+        assert_eq!(skip_trailing_characteres("a\u{0d}\u{0d}"), Some(2usize));
+    }
+
+    #[test]
+    fn skip_starting() {
+        assert_eq!(skip_starting_characteres(""), None);
+        assert_eq!(skip_starting_characteres("\u{0d}"), None);
+        assert_eq!(skip_starting_characteres("a\u{0d}"), Some(0usize));
+        assert_eq!(skip_starting_characteres("\u{0d}a"), Some(1usize));
+    }
 
     #[test]
     fn formatted_quoted_string_ok() {

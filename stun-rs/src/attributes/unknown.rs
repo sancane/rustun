@@ -131,6 +131,9 @@ mod tests {
             .expect("Not unknown attribute");
         assert_eq!(attr.attribute_type(), AttributeType::from(0xffff));
         assert_eq!(attr.attribute_data(), Some([0x01, 0x02].as_ref()));
+
+        // Unknown attributes are not verifiable
+        assert!(attr.as_verifiable_ref().is_none());
     }
 
     #[test]
@@ -145,6 +148,13 @@ mod tests {
         // Unknown attributes can not be encoded.
         let ctx = AttributeEncoderContext::new(None, &dummy_msg, &mut buffer);
         let result = attr.encode(ctx);
+        assert_eq!(
+            result.expect_err("Error expected"),
+            StunErrorType::InvalidParam
+        );
+
+        let ctx = AttributeEncoderContext::new(None, &dummy_msg, &mut buffer);
+        let result = attr.post_encode(ctx);
         assert_eq!(
             result.expect_err("Error expected"),
             StunErrorType::InvalidParam

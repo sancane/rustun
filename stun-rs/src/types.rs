@@ -618,7 +618,7 @@ mod credential_tests {
 
         // `OGHAM` SPACE MARK (U+1680) is mapped to SPACE (U+0020)
         // thus, the full string is mapped to <foo bar>
-        assert_eq!(key.credential_mechanism(), CredentialMechanism::ShortTerm);
+        assert!(key.credential_mechanism().is_short_term());
 
         let expected = "foo bar".as_bytes();
         assert_eq!(key.as_bytes(), expected);
@@ -631,7 +631,7 @@ mod credential_tests {
         let key = HMACKey::new_long_term("user", "realm", "pass", algorithm)
             .expect("Could not create HMACKey");
 
-        assert_eq!(key.credential_mechanism(), CredentialMechanism::LongTerm);
+        assert!(key.credential_mechanism().is_long_term());
 
         let md5_hash = [
             0x84, 0x93, 0xFB, 0xC5, 0x3B, 0xA5, 0x82, 0xFB, 0x4C, 0x04, 0x4C, 0x45, 0x6B, 0xDC,
@@ -652,5 +652,10 @@ mod credential_tests {
         assert_eq!(key.credential_mechanism(), CredentialMechanism::LongTerm);
         assert_eq!(key.as_bytes(), sha256_hash);
         assert_eq!(key.as_bytes().len(), 32);
+
+        let algorithm = Algorithm::from(AlgorithmId::Unassigned(15));
+        let error = HMACKey::new_long_term("user", "realm", "pass", algorithm)
+            .expect_err("No HMACKey with unassigned algorithm must be created");
+        assert_eq!(error, StunErrorType::InvalidParam);
     }
 }
