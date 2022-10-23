@@ -141,6 +141,10 @@ mod tests {
         // Check deref
         let slice: &[u8] = &attr;
         assert_eq!(slice, attr.hash());
+
+        // Control characters like TAB `U+0009` are disallowed by OpaqueString profile
+        let error = UserHash::new("user\u{0009}name", "realm").expect_err("Error expected");
+        assert_eq!(error, StunErrorType::InvalidParam);
     }
 
     #[test]

@@ -91,12 +91,6 @@ impl PartialEq<str> for Realm {
     }
 }
 
-impl PartialEq<Realm> for str {
-    fn eq(&self, other: &Realm) -> bool {
-        OpaqueString::compare(self, other).unwrap_or(false)
-    }
-}
-
 impl PartialEq<String> for Realm {
     fn eq(&self, other: &String) -> bool {
         OpaqueString::compare(self, other).unwrap_or(false)
@@ -125,20 +119,23 @@ impl TryFrom<&str> for Realm {
     type Error = StunError;
 
     fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let realm = strings::opaque_string_prepapre(value)?;
-        let realm = QuotedString::try_from(realm.as_ref())?;
-        let realm_len = realm.as_str().len();
-        (realm_len < MAX_ENCODED_SIZE)
-            .then_some(Realm(realm))
-            .ok_or_else(|| {
-                StunError::new(
-                    StunErrorType::ValueTooLong,
-                    format!(
-                        "Value length {} > max. encoded size {}",
-                        realm_len, MAX_ENCODED_SIZE
-                    ),
-                )
-            })
+        Realm::new(value)
+    }
+}
+
+impl TryFrom<&String> for Realm {
+    type Error = StunError;
+
+    fn try_from(value: &String) -> Result<Self, Self::Error> {
+        Realm::new(value)
+    }
+}
+
+impl TryFrom<String> for Realm {
+    type Error = StunError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        Realm::new(value)
     }
 }
 
@@ -201,6 +198,12 @@ mod tests {
         assert_eq!(realm_1, value);
         assert_eq!(realm_1, realm_2);
 
+        let val: &String = realm_1.as_ref();
+        assert!(value.eq(val));
+
+        let value: &str = realm_1.as_ref();
+        assert!(value.eq(val));
+
         // Opaque string does not allow empty labels
         let result = Realm::try_from("");
         assert_eq!(
@@ -216,10 +219,10 @@ mod tests {
         );
 
         let value = "x".repeat(MAX_ENCODED_SIZE);
-        let _result = Realm::new(value.as_str()).expect("Can not create a Realm attribute");
+        let _result = Realm::try_from(value).expect("Can not create a Realm attribute");
 
         let value = "x".repeat(MAX_ENCODED_SIZE + 1);
-        let result = Realm::new(value);
+        let result = Realm::try_from(&value);
         assert_eq!(
             result.expect_err("Error expected"),
             StunErrorType::ValueTooLong
@@ -297,6 +300,13 @@ mod tests {
         let ctx = AttributeEncoderContext::new(None, &dummy_msg, &mut buffer);
         let result = realm.encode(ctx);
         assert_eq!(result, Ok(11));
+
+        let mut buffer: [u8; MAX_ENCODED_SIZE] = [0x0; MAX_ENCODED_SIZE];
+        let realm = Realm::try_from("x".repeat(MAX_ENCODED_SIZE))
+            .expect("Can not create a Realm attribute");
+        let ctx = AttributeEncoderContext::new(None, &dummy_msg, &mut buffer);
+        let result = realm.encode(ctx);
+        assert_eq!(result, Ok(MAX_ENCODED_SIZE));
     }
 
     #[test]
@@ -310,6 +320,17 @@ mod tests {
         assert_eq!(
             result.expect_err("Error expected"),
             StunErrorType::SmallBuffer
+        );
+
+        let mut buffer: [u8; MAX_ENCODED_SIZE + 1] = [0x0; MAX_ENCODED_SIZE + 1];
+        let str = "x".repeat(MAX_ENCODED_SIZE + 1);
+        let value = QuotedString::try_from(str.as_str()).expect("Expected QuotedString");
+        let realm = Realm(value);
+        let ctx = AttributeEncoderContext::new(None, &dummy_msg, &mut buffer);
+        let result = realm.encode(ctx);
+        assert_eq!(
+            result.expect_err("Error expected"),
+            StunErrorType::ValueTooLong
         );
     }
 

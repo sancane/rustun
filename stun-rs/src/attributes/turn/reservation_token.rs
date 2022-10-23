@@ -78,6 +78,13 @@ mod tests {
     use crate::StunAttribute;
 
     #[test]
+    fn constructor() {
+        let token = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08];
+        let attr = ReservationToken::from(token);
+        assert_eq!(attr.as_ref(), token);
+    }
+
+    #[test]
     fn decode_reservation_token_constructor() {
         let token = [0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08];
         let attr = ReservationToken::from(token);
