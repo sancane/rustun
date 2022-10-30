@@ -3,7 +3,7 @@
 [![codecov](https://codecov.io/gh/sancane/rustun/branch/main/graph/badge.svg?token=19Juem5PrN)](https://codecov.io/gh/sancane/rustun)
 [![Rust Report Card](https://rust-reportcard.xuri.me/badge/github.com/sancane/rustun)](https://rust-reportcard.xuri.me/report/github.com/sancane/rustun)
 
-# Crate stun_rs
+# Crate stun-rs
 
 This crate provides a simple but high effective framework to manage STUN protocol messages. The implementation is based on:
 * [`RFC8489`](https://datatracker.ietf.org/doc/html/rfc8489). Session Traversal Utilities for NAT (STUN).
@@ -43,7 +43,7 @@ Example that creates and encodes a STUN Binding request
 
 Example that decodes a STUN Binding response and fetches some attributes.
 ```rust
-// This response uses the following parameter:
+ // This response uses the following parameter:
  // Password: `VOkJxbRl1RmTxUk/WvJxBt` (without quotes)
  // Software name: "test vector" (without quotes)
  // Mapped address: 192.0.2.1 port 32853
@@ -100,6 +100,13 @@ Example that decodes a STUN Binding response and fetches some attributes.
  assert_eq!(socket.port(), 32853);
  assert!(socket.is_ipv4());
 ```
+
+# Common features
+
+This crate defines next feature flags that can be enabled:
+* **turn**: Extends support for parsing attributes defined in [`RFC8656`](https://datatracker.ietf.org/doc/html/rfc8656). Traversal Using Relays around NAT (TURN)
+* **ice**: Extends support for parsing attributes defined in [`RFC8445`](https://datatracker.ietf.org/doc/html/rfc8445). Interactive Connectivity Establishment (ICE).
+* **experiments**: This flag can be set to adjust some behavior of the library, such as default padding. When testing protocols, we can use this flag to force the library to keep the data associated with unknown attributes. By default, unknown attributes store no data to save memory consumption.
 
 # Contributing
 

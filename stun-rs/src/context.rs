@@ -220,6 +220,11 @@ impl MessageDecoder {
 
         Ok((builder.build(), size))
     }
+
+    /// Gets the context associated to this decoder
+    pub fn get_context(&self) -> Option<&DecoderContext> {
+        self.ctx.as_ref()
+    }
 }
 
 #[cfg(feature = "experiments")]
@@ -502,6 +507,7 @@ mod tests {
 
         // create a decoder that uses our custom context
         let decoder = MessageDecoderBuilder::default().with_context(ctx).build();
+        assert!(decoder.get_context().is_some());
 
         let (msg, size) = decoder
             .decode(&sample_ipv4_response)

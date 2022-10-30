@@ -86,12 +86,6 @@ impl PartialEq<str> for UserName {
     }
 }
 
-impl PartialEq<UserName> for str {
-    fn eq(&self, other: &UserName) -> bool {
-        OpaqueString::compare(self, other).unwrap_or(false)
-    }
-}
-
 impl PartialEq<String> for UserName {
     fn eq(&self, other: &String) -> bool {
         OpaqueString::compare(self, other).unwrap_or(false)
@@ -124,6 +118,22 @@ impl TryFrom<&str> for UserName {
     }
 }
 
+impl TryFrom<&String> for UserName {
+    type Error = StunError;
+
+    fn try_from(value: &String) -> Result<Self, Self::Error> {
+        UserName::new(value)
+    }
+}
+
+impl TryFrom<String> for UserName {
+    type Error = StunError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        UserName::new(value)
+    }
+}
+
 impl DecodeAttributeValue for UserName {
     fn decode(ctx: AttributeDecoderContext) -> Result<(Self, usize), StunError> {
         let (str, size) = <&'_ str as Decode<'_>>::decode(ctx.raw_value())?;
@@ -145,11 +155,11 @@ impl DecodeAttributeValue for UserName {
 
 impl EncodeAttributeValue for UserName {
     fn encode(&self, mut ctx: AttributeEncoderContext) -> Result<usize, StunError> {
-        if self.as_str().len() > MAX_ENCODED_SIZE {
+        if self.as_str().len() >= MAX_ENCODED_SIZE {
             return Err(StunError::new(
                 StunErrorType::ValueTooLong,
                 format!(
-                    "Value length {} > max. encoded size {}",
+                    "Value length {} >= max. encoded size {}",
                     self.as_str().len(),
                     MAX_ENCODED_SIZE
                 ),
@@ -172,7 +182,7 @@ mod tests {
     #[test]
     fn user_name_constructor() {
         let name = String::from("username");
-        let user_name = UserName::new(&name).expect("Can not create USERNAME attribute");
+        let user_name = UserName::try_from(&name).expect("Can not create USERNAME attribute");
         // Next comparison will use the OpaqueString profile to compare strings
         assert_eq!(user_name, "username");
         assert_eq!("username", user_name);
@@ -180,12 +190,17 @@ mod tests {
         assert_eq!(user_name, name);
 
         let name = "x".repeat(MAX_ENCODED_SIZE - 1);
-        let _user_name = UserName::new(&name).expect("Can not create USERNAME attribute");
+        let user_name = UserName::try_from(&name).expect("Can not create USERNAME attribute");
+
+        let val: &String = user_name.as_ref();
+        assert!(name.eq(val));
+
+        let val: &str = user_name.as_ref();
+        assert!(name.eq(val));
 
         let name = "x".repeat(MAX_ENCODED_SIZE);
-
         // Username must be an UTF-8-encoded sequence of fewer than 509 bytes.
-        let result = UserName::try_from(name.as_str());
+        let result = UserName::try_from(name);
         assert_eq!(
             result.expect_err("Error expected"),
             StunErrorType::ValueTooLong
@@ -275,7 +290,7 @@ mod tests {
 
         let ctx = AttributeEncoderContext::new(None, &dummy_msg, &mut buffer);
         let result = user_name.encode(ctx);
-        assert_eq!(result, Ok(508));
+        assert_eq!(result, Ok(MAX_ENCODED_SIZE - 1));
     }
 
     #[test]
@@ -298,6 +313,16 @@ mod tests {
         assert_eq!(
             result.expect_err("Error expected"),
             StunErrorType::SmallBuffer
+        );
+
+        let mut buffer: [u8; MAX_ENCODED_SIZE] = [0x0; MAX_ENCODED_SIZE];
+        let value = "x".repeat(MAX_ENCODED_SIZE);
+        let user_name = UserName(value);
+        let ctx = AttributeEncoderContext::new(None, &dummy_msg, &mut buffer);
+        let result = user_name.encode(ctx);
+        assert_eq!(
+            result.expect_err("Error expected"),
+            StunErrorType::ValueTooLong
         );
     }
 

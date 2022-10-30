@@ -119,6 +119,21 @@
 //! #   Ok(())
 //! # }
 //!```
+//!
+//! #  Common features
+//! This crate defines next feature flags that can be enabled:
+//! * **turn**: Extends support for parsing attributes defined in
+//!     [`RFC8656`](https://datatracker.ietf.org/doc/html/rfc8656).
+//!     Traversal Using Relays around NAT (TURN)
+//! * **ice**: Extends support for parsing attributes defined in
+//!     [`RFC8445`](https://datatracker.ietf.org/doc/html/rfc8445).
+//!     Interactive Connectivity Establishment (ICE).
+//! * **experiments**: This flag can be set to adjust some behavior
+//!     of the library, such as default padding. When testing protocols,
+//!     we can use this flag to force the library to keep the data
+//!     associated with [Unknown](crate::attributes::Unknown) attributes.
+//!     By default, [Unknown](crate::attributes::Unknown) attributes
+//!     store no data to save memory consumption.
 
 #![deny(missing_docs)]
 
@@ -153,6 +168,7 @@ pub use crate::error::{StunError, StunErrorType};
 pub use crate::message::{
     MessageClass, MessageMethod, MessageType, StunMessage, StunMessageBuilder,
 };
+pub use crate::raw::MessageHeader;
 pub use crate::types::{AddressFamily, CredentialMechanism, ErrorCode, HMACKey, TransactionId};
 
 /// Provides a simple interface to encode elements into buffers.

@@ -136,6 +136,36 @@ mod tests {
     use crate::{Algorithm, AlgorithmId};
 
     #[test]
+    fn constructor() {
+        let mut attr = PasswordAlgorithms::default();
+        assert_eq!(attr.iter().count(), 0);
+
+        attr.add(PasswordAlgorithm::new(Algorithm::from(AlgorithmId::MD5)));
+        assert_eq!(attr.iter().count(), 1);
+
+        attr.add(PasswordAlgorithm::new(Algorithm::from(AlgorithmId::SHA256)));
+        assert_eq!(attr.iter().count(), 2);
+
+        let mut iter = attr.password_algorithms().iter();
+        let algorithm = iter.next().expect("Expected algorithm");
+        assert_eq!(algorithm.algorithm(), AlgorithmId::MD5);
+
+        let algorithm = iter.next().expect("Expected algorithm");
+        assert_eq!(algorithm.algorithm(), AlgorithmId::SHA256);
+
+        // No more attributes expected
+        assert!(iter.next().is_none());
+
+        let attributes = vec![
+            PasswordAlgorithm::new(Algorithm::from(AlgorithmId::MD5)),
+            PasswordAlgorithm::new(Algorithm::from(AlgorithmId::SHA256)),
+        ];
+        let attr_1 = PasswordAlgorithms::from(attributes);
+
+        assert_eq!(attr, attr_1);
+    }
+
+    #[test]
     fn decode_password_algorithms_attribute_value() {
         let dummy_msg = [];
         let buffer = [];
