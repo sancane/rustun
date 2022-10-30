@@ -1,6 +1,6 @@
 [package]
 name = "stun-rs"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Santiago Carot-Nemesio <sancane@gmail.com"]
 description = """Rust framework to manage STUN messages"""
 documentation = "https://docs.rs/stun-rs"
