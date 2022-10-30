@@ -153,6 +153,7 @@ pub use crate::error::{StunError, StunErrorType};
 pub use crate::message::{
     MessageClass, MessageMethod, MessageType, StunMessage, StunMessageBuilder,
 };
+pub use crate::raw::MessageHeader;
 pub use crate::types::{AddressFamily, CredentialMechanism, ErrorCode, HMACKey, TransactionId};
 
 /// Provides a simple interface to encode elements into buffers.

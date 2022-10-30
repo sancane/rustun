@@ -21,8 +21,11 @@ use std::convert::{TryFrom, TryInto};
 pub const MESSAGE_HEADER_SIZE: usize = 20;
 pub const ATTRIBUTE_HEADER_SIZE: usize = 4;
 
+/// The STUN message header
 #[derive(Debug)]
 pub struct MessageHeader<'a> {
+    /// The value of the most significant 2 bits
+    pub bits: u8,
     /// Message type
     pub msg_type: u16,
     /// Message length
@@ -31,6 +34,14 @@ pub struct MessageHeader<'a> {
     pub cookie: &'a [u8; MAGIC_COOKIE_SIZE],
     /// Transaction Id
     pub transaction_id: &'a [u8; TRANSACTION_ID_SIZE],
+}
+
+impl<'a> TryFrom<&'a [u8; MESSAGE_HEADER_SIZE]> for MessageHeader<'a> {
+    type Error = StunError;
+    fn try_from(buff: &'a [u8; MESSAGE_HEADER_SIZE]) -> Result<Self, Self::Error> {
+        let (attr, _) = MessageHeader::decode(buff)?;
+        Ok(attr)
+    }
 }
 
 impl<'a> PartialEq for MessageHeader<'a> {
@@ -49,12 +60,16 @@ impl<'a> Decode<'a> for MessageHeader<'a> {
         check_buffer_boundaries(buffer, MESSAGE_HEADER_SIZE)?;
 
         let msg_type = BigEndian::read_u16(&buffer[..2]);
+        let bits: u8 = (msg_type >> 14).try_into()?;
+        let msg_type = msg_type & 0x3FFF;
         let msg_length = BigEndian::read_u16(&buffer[2..4]);
+
         let cookie = <&[u8; MAGIC_COOKIE_SIZE]>::try_from(&buffer[4..8])?;
         let transaction_id = <&[u8; TRANSACTION_ID_SIZE]>::try_from(&buffer[8..20])?;
 
         Ok((
             Self {
+                bits,
                 msg_type,
                 msg_length,
                 cookie,
@@ -235,6 +250,26 @@ pub(crate) fn get_input_text(buffer: &[u8], attr_type: u16) -> Result<Vec<u8>, S
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn message_header() {
+        let header = [
+            0x80, 0x01, 0x00, 0x58, // Request type and message length
+            0x21, 0x12, 0xa4, 0x42, // Magic cookie
+            0xb7, 0xe7, 0xa7, 0x01, // }
+            0xbc, 0x34, 0xd6, 0x86, // }  Transaction ID
+            0xfa, 0x87, 0xdf, 0xae, // }
+        ];
+        let header = MessageHeader::try_from(&header).expect("Can not get STUN header");
+        assert_eq!(header.bits, 0x02);
+        assert_eq!(header.msg_type, 0x01);
+        assert_eq!(header.msg_length, 0x58);
+        assert_eq!(header.cookie, &[0x21, 0x12, 0xa4, 0x42]);
+        assert_eq!(
+            header.transaction_id,
+            &[0xb7, 0xe7, 0xa7, 0x01, 0xbc, 0x34, 0xd6, 0x86, 0xfa, 0x87, 0xdf, 0xae]
+        );
+    }
 
     #[test]
     fn test_decode_message() {
