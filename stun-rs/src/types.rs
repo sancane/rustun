@@ -29,14 +29,24 @@ impl TransactionId {
     }
 }
 
+fn fmt_transcation_id(bytes: &[u8], f: &mut fmt::Formatter) -> fmt::Result {
+    for byte in bytes {
+        write!(f, "{:02X}", byte)?;
+    }
+    write!(f, ")")
+}
+
 impl fmt::Debug for TransactionId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "TransactionId(0x")?;
-        for b in self.as_ref() {
-            write!(f, "{:02X}", b)?;
-        }
-        write!(f, ")")?;
-        Ok(())
+        fmt_transcation_id(self.as_ref(), f)
+    }
+}
+
+impl fmt::Display for TransactionId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "transaction id (0x")?;
+        fmt_transcation_id(self.as_ref(), f)
     }
 }
 
@@ -594,6 +604,9 @@ mod transaction_id_tests {
         // Check deref
         let slice: &[u8] = &tr3;
         assert_eq!(slice, tr3.as_bytes());
+
+        format!("{}", tr1);
+        format!("{:?}", tr1);
     }
 
     #[test]
