@@ -169,7 +169,9 @@ pub use crate::message::{
     MessageClass, MessageMethod, MessageType, StunMessage, StunMessageBuilder,
 };
 pub use crate::raw::MessageHeader;
-pub use crate::types::{AddressFamily, CredentialMechanism, ErrorCode, HMACKey, TransactionId};
+pub use crate::types::{
+    AddressFamily, CredentialMechanism, ErrorCode, HMACKey, TransactionId, MAGIC_COOKIE,
+};
 
 /// Provides a simple interface to encode elements into buffers.
 pub(crate) trait Encode {
