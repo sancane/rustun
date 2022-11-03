@@ -193,12 +193,12 @@ macro_rules! integer_attribute {
 pub(crate) use integer_attribute;
 
 fn socket_addr_xor(addr: &SocketAddr, transaction_id: &[u8; TRANSACTION_ID_SIZE]) -> SocketAddr {
-    let xor_port = addr.port() ^ (MAGIC_COOKIE >> 16) as u16;
+    let xor_port = addr.port() ^ (MAGIC_COOKIE.as_u32() >> 16) as u16;
     match addr.ip() {
         IpAddr::V4(ip) => {
             let mut octets = ip.octets();
             for (i, b) in octets.iter_mut().enumerate() {
-                *b ^= (MAGIC_COOKIE >> (24 - i * 8)) as u8;
+                *b ^= (MAGIC_COOKIE.as_u32() >> (24 - i * 8)) as u8;
             }
             let xor_ip = From::from(octets);
             SocketAddr::new(IpAddr::V4(xor_ip), xor_port)
@@ -206,7 +206,7 @@ fn socket_addr_xor(addr: &SocketAddr, transaction_id: &[u8; TRANSACTION_ID_SIZE]
         IpAddr::V6(ip) => {
             let mut octets = ip.octets();
             for (i, b) in octets.iter_mut().enumerate().take(4) {
-                *b ^= (MAGIC_COOKIE >> (24 - i * 8)) as u8;
+                *b ^= (MAGIC_COOKIE.as_u32() >> (24 - i * 8)) as u8;
             }
             for (i, b) in octets.iter_mut().enumerate().take(16).skip(4) {
                 *b ^= transaction_id[i - 4];

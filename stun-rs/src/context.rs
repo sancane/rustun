@@ -370,7 +370,7 @@ impl MessageEncoder {
 
         let mut length = 0;
         BigEndian::write_u16(&mut buffer[2..4], length);
-        BigEndian::write_u32(&mut buffer[4..8], MAGIC_COOKIE);
+        BigEndian::write_u32(&mut buffer[4..8], MAGIC_COOKIE.as_u32());
         buffer[8..20].copy_from_slice(msg.transaction_id().as_bytes());
 
         for (position, attr) in msg.attributes().iter().enumerate() {
