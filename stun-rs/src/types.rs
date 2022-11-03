@@ -2,18 +2,60 @@ use crate::common::{check_buffer_boundaries, sha256};
 use crate::error::{StunError, StunErrorType};
 use crate::strings::opaque_string_enforce;
 use crate::{Algorithm, AlgorithmId, Encode};
+use byteorder::{BigEndian, ByteOrder};
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
-use std::convert::TryFrom;
-use std::convert::TryInto;
+use std::convert::{TryFrom, TryInto};
 use std::fmt;
 use std::ops::Deref;
 use std::rc::Rc;
 
-/// STUN magic cookie
-pub const MAGIC_COOKIE: u32 = 0x2112_A442;
 pub(crate) const MAGIC_COOKIE_SIZE: usize = 4;
 pub(crate) const TRANSACTION_ID_SIZE: usize = 12;
+
+/// STUN message cookie
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct Cookie(u32);
+
+impl Cookie {
+    /// Returns the [`u32`] representation of the cookie
+    pub fn as_u32(&self) -> u32 {
+        self.0
+    }
+}
+
+impl PartialEq<u32> for Cookie {
+    fn eq(&self, other: &u32) -> bool {
+        self.0 == *other
+    }
+}
+
+impl PartialEq<Cookie> for u32 {
+    fn eq(&self, other: &Cookie) -> bool {
+        *self == other.0
+    }
+}
+
+impl PartialEq<[u8; MAGIC_COOKIE_SIZE]> for Cookie {
+    fn eq(&self, other: &[u8; MAGIC_COOKIE_SIZE]) -> bool {
+        self.0 == BigEndian::read_u32(other)
+    }
+}
+
+impl PartialEq<Cookie> for [u8; MAGIC_COOKIE_SIZE] {
+    fn eq(&self, other: &Cookie) -> bool {
+        other.0 == BigEndian::read_u32(self)
+    }
+}
+
+impl AsRef<u32> for Cookie {
+    fn as_ref(&self) -> &u32 {
+        &self.0
+    }
+}
+
+/// STUN magic cookie
+pub const MAGIC_COOKIE: Cookie = Cookie(0x2112_A442);
 
 /// The transaction ID is a 96-bit identifier, used to uniquely identify
 /// STUN transactions. It primarily serves to correlate requests with
@@ -427,6 +469,29 @@ impl Encode for ErrorCode {
         raw_value[3] = self.number();
         raw_value[4..reason_len + 4].clone_from_slice(self.reason.as_bytes());
         Ok(len)
+    }
+}
+
+#[cfg(test)]
+mod stun_cookie {
+    use super::*;
+
+    #[test]
+    fn stun_cookie() {
+        let cookie = [0x21, 0x12, 0xa4, 0x42];
+        assert!(MAGIC_COOKIE.eq(&cookie));
+        assert!(cookie.eq(&MAGIC_COOKIE));
+        assert_eq!(MAGIC_COOKIE, cookie);
+        assert_eq!(cookie, MAGIC_COOKIE);
+
+        let default_value = 0x2112_A442;
+        assert!(MAGIC_COOKIE.eq(&default_value));
+        assert!(default_value.eq(&MAGIC_COOKIE));
+        assert_eq!(MAGIC_COOKIE, default_value);
+        assert_eq!(default_value, MAGIC_COOKIE);
+
+        let val: &u32 = MAGIC_COOKIE.as_ref();
+        assert_eq!(*val, default_value);
     }
 }
 
