@@ -249,6 +249,7 @@ pub(crate) fn get_input_text(buffer: &[u8], attr_type: u16) -> Result<Vec<u8>, S
 
 #[cfg(test)]
 mod tests {
+    use crate::MAGIC_COOKIE;
     use super::*;
 
     #[test]
@@ -264,7 +265,7 @@ mod tests {
         assert_eq!(header.bits, 0x02);
         assert_eq!(header.msg_type, 0x01);
         assert_eq!(header.msg_length, 0x58);
-        assert_eq!(header.cookie, &[0x21, 0x12, 0xa4, 0x42]);
+        assert!(MAGIC_COOKIE.eq(header.cookie));
         assert_eq!(
             header.transaction_id,
             &[0xb7, 0xe7, 0xa7, 0x01, 0xbc, 0x34, 0xd6, 0x86, 0xfa, 0x87, 0xdf, 0xae]
