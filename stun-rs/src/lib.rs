@@ -157,7 +157,7 @@ pub mod protocols;
 pub use crate::context::StunPadding;
 
 pub use crate::algorithm::{Algorithm, AlgorithmId};
-pub use crate::attributes::{AttributeType, StunAttribute, StunAttributeType};
+pub use crate::attributes::{AttributeType, StunAttribute, StunAttributeType, Verifiable};
 pub use crate::context::{
     DecoderContext, DecoderContextBuilder, MessageDecoder, MessageDecoderBuilder,
 };

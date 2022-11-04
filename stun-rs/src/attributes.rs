@@ -23,7 +23,13 @@ pub mod turn;
 
 /// Trait implemented by all [`StunAttribute`] that required validation
 /// when they are decoded
-pub(crate) trait Verifiable {
+pub trait Verifiable {
+    /// Performs attribute validation on decoding
+    /// # Arguments:
+    /// - `input`: raw bytes buffer
+    /// - `ctx`: the decoder context
+    /// # Returns
+    /// `True` is the validations success or `False` if there is an error during the validation
     fn verify(&self, input: &[u8], cxt: &DecoderContext) -> bool;
 }
 

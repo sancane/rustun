@@ -1,3 +1,4 @@
+use crate::attributes::stun::{Fingerprint, MessageIntegrity, MessageIntegritySha256};
 use crate::attributes::{AsVerifiable, EncodeAttributeValue, Unknown};
 use crate::common::{check_buffer_boundaries, fill_padding_value, padding, DEFAULT_PADDING_VALUE};
 use crate::error::{
@@ -9,7 +10,10 @@ use crate::raw::{
 };
 use crate::registry::get_handler;
 use crate::types::MAGIC_COOKIE;
-use crate::{AttributeType, Decode, Encode, MessageType, StunMessageBuilder, TransactionId};
+use crate::{
+    AttributeType, Decode, Encode, MessageType, StunAttributeType, StunMessageBuilder,
+    TransactionId,
+};
 use crate::{HMACKey, StunAttribute, StunMessage};
 use byteorder::{BigEndian, ByteOrder};
 use fallible_iterator::{FallibleIterator, IntoFallibleIterator};
@@ -37,6 +41,16 @@ impl DecoderContextBuilder {
     /// data value whenever an unknown attribute is decoded.
     pub fn with_unknown_data(mut self) -> Self {
         self.0.unknown_data = true;
+        self
+    }
+
+    /// If agents should ignore attributes that follow MESSAGE-INTEGRITY,
+    /// with the exception of the MESSAGE-INTEGRITY-SHA256 and FINGERPRINT attributes.
+    /// STUN states that agents MUST ignore those attributes, use this flag if you want
+    /// to change this behavior: to decode all attributes event if they follow one of the
+    /// above mentioned attributes.
+    pub fn not_ignore(mut self) -> Self {
+        self.0.not_ignore = true;
         self
     }
 
@@ -84,6 +98,7 @@ pub struct DecoderContext {
     key: Option<HMACKey>,
     validation: bool,
     unknown_data: bool,
+    not_ignore: bool,
 }
 
 impl DecoderContext {
@@ -154,6 +169,46 @@ fn validate_attribute(
     }
 }
 
+#[derive(Debug, Default)]
+struct AttributeFilter {
+    message_integrity: bool,
+    message_integrity_sha256: bool,
+    fingerprint: bool,
+}
+
+fn ignore_attribute(f: &mut AttributeFilter, attr_type: AttributeType) -> bool {
+    if !f.message_integrity && attr_type == MessageIntegrity::get_type() {
+        if f.message_integrity_sha256 || f.fingerprint {
+            // MessageIntegrity comes behind of MessageIntegritySha256
+            // or Fingerprint or both
+            return true;
+        } else {
+            f.message_integrity = true;
+            return false;
+        }
+    }
+
+    if !f.message_integrity_sha256 && attr_type == MessageIntegritySha256::get_type() {
+        if f.fingerprint {
+            // MessageIntegritySha256 might come behind of MessageIntegrity
+            // but not after of Fingerprint
+            return true;
+        } else {
+            f.message_integrity_sha256 = true;
+            return false;
+        }
+    }
+
+    if !f.fingerprint && attr_type == Fingerprint::get_type() {
+        f.message_integrity_sha256 = true;
+        return false;
+    }
+
+    // If MessageIntegrity or  MessageIntegritySha256 or Fingerprint
+    // if processed, this attribute must be ignored
+    f.message_integrity || f.message_integrity_sha256 || f.fingerprint
+}
+
 impl MessageDecoder {
     /// Decodes the STUN raw buffer
     /// # Arguments:
@@ -173,6 +228,12 @@ impl MessageDecoder {
         let mut iter = attributes.into_fallible_iter();
         let mut index = MESSAGE_HEADER_SIZE;
         let mut position = 0;
+
+        let mut filter = AttributeFilter::default();
+        let ignore = match self.ctx.as_ref() {
+            Some(ctx) => !ctx.not_ignore,
+            None => true,
+        };
 
         while let Some(raw_attr) = iter.next().map_err(|error| {
             StunDecodeError(StunErrorLevel::Attribute(StunAttributeError {
@@ -205,15 +266,18 @@ impl MessageDecoder {
                 ),
             };
 
-            validate_attribute(&attr, &self.ctx, buffer).map_err(|error| {
-                StunDecodeError(StunErrorLevel::Attribute(StunAttributeError {
-                    attr_type: Some(attr_type),
-                    position,
-                    error,
-                }))
-            })?;
+            if !ignore_attribute(&mut filter, attr_type) || !ignore {
+                validate_attribute(&attr, &self.ctx, buffer).map_err(|error| {
+                    StunDecodeError(StunErrorLevel::Attribute(StunAttributeError {
+                        attr_type: Some(attr_type),
+                        position,
+                        error,
+                    }))
+                })?;
 
-            builder = builder.with_attribute(attr);
+                builder = builder.with_attribute(attr);
+            }
+
             index = MESSAGE_HEADER_SIZE + iter.pos();
             position += 1;
         }
@@ -466,6 +530,42 @@ mod tests {
     use crate::methods::BINDING;
     use crate::MessageClass;
     use std::net::{IpAddr, Ipv4Addr};
+
+    #[test]
+    fn test_ignore_attribute() {
+        let mut filter = AttributeFilter::default();
+        assert!(!ignore_attribute(&mut filter, XorMappedAddress::get_type()));
+        assert!(!ignore_attribute(&mut filter, MessageIntegrity::get_type()));
+        assert!(ignore_attribute(&mut filter, UserName::get_type()));
+        assert!(!ignore_attribute(
+            &mut filter,
+            MessageIntegritySha256::get_type()
+        ));
+        assert!(ignore_attribute(&mut filter, Software::get_type()));
+        assert!(!ignore_attribute(&mut filter, Fingerprint::get_type()));
+        assert!(ignore_attribute(&mut filter, Software::get_type()));
+
+        let mut filter = AttributeFilter::default();
+        assert!(!ignore_attribute(&mut filter, Software::get_type()));
+        assert!(!ignore_attribute(
+            &mut filter,
+            MessageIntegritySha256::get_type()
+        ));
+        assert!(ignore_attribute(&mut filter, UserName::get_type()));
+        assert!(ignore_attribute(&mut filter, MessageIntegrity::get_type()));
+        assert!(!ignore_attribute(&mut filter, Fingerprint::get_type()));
+        assert!(ignore_attribute(&mut filter, UserName::get_type()));
+
+        let mut filter = AttributeFilter::default();
+        assert!(!ignore_attribute(&mut filter, XorMappedAddress::get_type()));
+        assert!(!ignore_attribute(&mut filter, Fingerprint::get_type()));
+        assert!(ignore_attribute(&mut filter, UserName::get_type()));
+        assert!(ignore_attribute(
+            &mut filter,
+            MessageIntegritySha256::get_type()
+        ));
+        assert!(ignore_attribute(&mut filter, MessageIntegrity::get_type()));
+    }
 
     #[test]
     fn message_decoder() {

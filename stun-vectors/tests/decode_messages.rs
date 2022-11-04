@@ -1,12 +1,16 @@
+use std::convert::TryFrom;
+
 use stun_rs::attributes::ice::{IceControlled, Priority, UseCandidate};
 use stun_rs::attributes::stun::{
     Fingerprint, MessageIntegrity, MessageIntegritySha256, Nonce, Realm, Software, UserHash,
     UserName, XorMappedAddress,
 };
 use stun_rs::error::StunErrorLevel;
+use stun_rs::methods::BINDING;
 use stun_rs::{
-    Algorithm, AlgorithmId, AttributeType, DecoderContextBuilder, HMACKey, MessageDecoderBuilder,
-    StunAttributeType, StunErrorType,
+    Algorithm, AlgorithmId, AttributeType, DecoderContextBuilder, HMACKey, MessageClass,
+    MessageDecoderBuilder, MessageEncoderBuilder, StunAttributeType, StunErrorType, StunMessage,
+    StunMessageBuilder,
 };
 
 // 2.1. Sample Request
@@ -289,5 +293,124 @@ fn decode_request() {
     assert!(msg
         .get::<UseCandidate>()
         .ok_or("Use candidate attribute not found")
+        .is_ok());
+}
+
+fn create_msg_with_ignorable_attributes(key: HMACKey) -> StunMessage {
+    let software = Software::new("STUN test client").expect("Could not create Software attribute");
+    let priority = Priority::from(0x6e0001ffu32);
+    let ice_controlled = IceControlled::from(0x932ff9b151263b36u64);
+    let user_name = UserName::try_from("evtj:h6vY").expect("Can not create USERNAME attribute");
+    let integrity = MessageIntegrity::new(key);
+    let fingerprint = Fingerprint::default();
+
+    // Create a message and add some attributes after MessageIntegrity and Fingerprint, that MUST be ignored
+    StunMessageBuilder::new(BINDING, MessageClass::Request)
+        .with_attribute(software)
+        .with_attribute(user_name)
+        .with_attribute(integrity)
+        .with_attribute(priority)
+        .with_attribute(fingerprint)
+        .with_attribute(ice_controlled)
+        .build()
+}
+
+#[test]
+fn decode_without_ignored_attributes() {
+    let key = HMACKey::new_short_term("VOkJxbRl1RmTxUk/WvJxBt").expect("Could not create HMACKey");
+    let msg = create_msg_with_ignorable_attributes(key.clone());
+
+    let mut buffer: [u8; 150] = [0x00; 150];
+
+    let encoder = MessageEncoderBuilder::default().build();
+    let encoded_size = encoder
+        .encode(&mut buffer, &msg)
+        .expect("Could not encode STUN message");
+    assert_eq!(encoded_size, 108);
+
+    let ctx = DecoderContextBuilder::default()
+        .with_key(key)
+        .with_validation()
+        .build();
+    let decoder = MessageDecoderBuilder::default().with_context(ctx).build();
+
+    let (msg, decoded_size) = decoder.decode(&buffer).expect("Can not decode StunMessage");
+    assert_eq!(decoded_size, encoded_size);
+
+    // Only Software, UserName, MessageIntegrity and Fingerprint
+    // must be processed
+    assert_eq!(msg.attributes().len(), 4);
+
+    assert!(msg
+        .get::<Software>()
+        .ok_or("Software attribute not found")
+        .is_ok());
+    assert!(msg
+        .get::<UserName>()
+        .ok_or("UserName attribute not found")
+        .is_ok());
+    assert!(msg
+        .get::<MessageIntegrity>()
+        .ok_or("MessageIntegrity attribute not found")
+        .is_ok());
+    assert!(msg
+        .get::<Fingerprint>()
+        .ok_or("Fingerprint attribute not found")
+        .is_ok());
+
+    // Check that Priority and IceControlled attributes are ignored
+    assert!(msg.get::<Priority>().is_none());
+    assert!(msg.get::<IceControlled>().is_none());
+}
+
+#[test]
+fn decode_with_ignored_attributes() {
+    let key = HMACKey::new_short_term("VOkJxbRl1RmTxUk/WvJxBt").expect("Could not create HMACKey");
+    let msg = create_msg_with_ignorable_attributes(key.clone());
+
+    let mut buffer: [u8; 150] = [0x00; 150];
+
+    let encoder = MessageEncoderBuilder::default().build();
+    let encoded_size = encoder
+        .encode(&mut buffer, &msg)
+        .expect("Could not encode STUN message");
+    assert_eq!(encoded_size, 108);
+
+    let ctx = DecoderContextBuilder::default()
+        .with_key(key)
+        .with_validation()
+        .not_ignore()
+        .build();
+    let decoder = MessageDecoderBuilder::default().with_context(ctx).build();
+
+    let (msg, decoded_size) = decoder.decode(&buffer).expect("Can not decode StunMessage");
+    assert_eq!(decoded_size, encoded_size);
+
+    // All attributes must be processed
+    assert_eq!(msg.attributes().len(), 6);
+
+    assert!(msg
+        .get::<Software>()
+        .ok_or("Software attribute not found")
+        .is_ok());
+    assert!(msg
+        .get::<UserName>()
+        .ok_or("UserName attribute not found")
+        .is_ok());
+    assert!(msg
+        .get::<MessageIntegrity>()
+        .ok_or("MessageIntegrity attribute not found")
+        .is_ok());
+    assert!(msg
+        .get::<Priority>()
+        .ok_or("Priority attribute not found")
+        .is_ok());
+    assert!(msg
+        .get::<Fingerprint>()
+        .ok_or("Fingerprint attribute not found")
+        .is_ok());
+    assert!(msg
+        .get::<IceControlled>()
+        .ok_or("IceControlled attribute not found")
         .is_ok());
 }

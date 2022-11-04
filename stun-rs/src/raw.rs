@@ -249,8 +249,8 @@ pub(crate) fn get_input_text(buffer: &[u8], attr_type: u16) -> Result<Vec<u8>, S
 
 #[cfg(test)]
 mod tests {
-    use crate::MAGIC_COOKIE;
     use super::*;
+    use crate::MAGIC_COOKIE;
 
     #[test]
     fn message_header() {
