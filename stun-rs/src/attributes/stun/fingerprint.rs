@@ -20,12 +20,7 @@ pub struct EncodableFingerprint {}
 pub struct DecodableFingerprint(u32);
 
 impl DecodableFingerprint {
-    /// Validates the input value with the CRC-32 attribute value
-    /// # Arguments:
-    /// * `input`- the STUN message up to (but excluding) the FINGERPRINT attribute itself.
-    /// # Returns:
-    /// true if `input` does not match the calculated CRC-32 value.
-    pub fn validate(&self, input: &[u8]) -> bool {
+    fn validate(&self, input: &[u8]) -> bool {
         let crc32 = crc::Crc::<u32>::new(&crc::CRC_32_ISO_HDLC).checksum(input);
         self.0 == crc32
     }
@@ -125,10 +120,7 @@ impl DecodeAttributeValue for Fingerprint {
 
 impl crate::attributes::Verifiable for Fingerprint {
     fn verify(&self, input: &[u8], _cxt: &DecoderContext) -> bool {
-        match self {
-            Fingerprint::Decodable(attr) => attr.validate(input),
-            _ => false,
-        }
+        self.validate(input)
     }
 }
 
@@ -138,16 +130,26 @@ impl crate::attributes::AsVerifiable for Fingerprint {
     }
 }
 
+impl Fingerprint {
+    /// Validates the input value with the CRC-32 attribute value
+    /// # Arguments:
+    /// * `input`- the STUN message up to (but excluding) the FINGERPRINT attribute itself.
+    /// # Returns:
+    /// true if `input` does not match the calculated CRC-32 value.
+    pub fn validate(&self, input: &[u8]) -> bool {
+        match self {
+            Fingerprint::Decodable(attr) => attr.validate(input),
+            _ => false,
+        }
+    }
+}
 stunt_attribute!(Fingerprint, FINGERPRINT);
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::attributes::EncodeAttributeValue;
     use crate::StunAttribute;
-    use crate::{
-        attributes::{EncodeAttributeValue, Verifiable},
-        DecoderContextBuilder,
-    };
 
     #[test]
     fn encode_fingerprint() {
@@ -195,11 +197,10 @@ mod tests {
         let fingerprint = Fingerprint::from([0xc0, 0x7d, 0x4c, 0x96]);
         format!("{:?}", fingerprint);
 
-        let ctx = DecoderContextBuilder::default().build();
-        assert!(fingerprint.verify(&input, &ctx));
+        assert!(fingerprint.validate(&input));
 
         let fingerprint = Fingerprint::default();
-        assert!(!fingerprint.verify(&input, &ctx));
+        assert!(!fingerprint.validate(&input));
     }
 
     #[test]
