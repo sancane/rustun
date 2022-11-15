@@ -153,9 +153,7 @@ mod tests {
         let password = "VOkJxbRl1RmTxUk/WvJxBt";
         let key = HMACKey::new_short_term(password).expect("Could not create HMACKey");
 
-        let ctx = DecoderContextBuilder::default().with_key(key).build();
-
-        assert!(attr.verify(&input, &ctx));
+        assert!(attr.validate(&input, &key));
     }
 
     #[test]
@@ -177,9 +175,8 @@ mod tests {
         let input: [u8; 48] = [0xff; 48];
         let password = "VOkJxbRl1RmTxUk/WvJxBt";
         let key = HMACKey::new_short_term(password).expect("Could not create HMACKey");
-        let attr = MessageIntegrity::new(key);
-        let ctx = DecoderContextBuilder::default().build();
-        assert!(!attr.verify(&input, &ctx));
+        let attr = MessageIntegrity::new(key.clone());
+        assert!(!attr.validate(&input, &key));
     }
 
     #[test]
@@ -204,9 +201,7 @@ mod tests {
         let key = HMACKey::new_long_term(username, realm, password, algorithm)
             .expect("Could not create HMACKey");
 
-        let ctx = DecoderContextBuilder::default().with_key(key).build();
-
-        assert!(attr.verify(&input, &ctx));
+        assert!(attr.validate(&input, &key));
     }
 
     #[test]
