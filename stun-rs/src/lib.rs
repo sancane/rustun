@@ -168,7 +168,7 @@ pub use crate::error::{StunError, StunErrorType};
 pub use crate::message::{
     MessageClass, MessageMethod, MessageType, StunMessage, StunMessageBuilder,
 };
-pub use crate::raw::MessageHeader;
+pub use crate::raw::{MessageHeader, MESSAGE_HEADER_SIZE};
 pub use crate::types::{
     AddressFamily, Cookie, CredentialMechanism, ErrorCode, HMACKey, TransactionId, MAGIC_COOKIE,
 };

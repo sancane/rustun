@@ -18,6 +18,8 @@ use std::convert::{TryFrom, TryInto};
 //      |                     Transaction ID (96 bits)                  |
 //      |                                                               |
 //      +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+/// STUN message header size
 pub const MESSAGE_HEADER_SIZE: usize = 20;
 pub const ATTRIBUTE_HEADER_SIZE: usize = 4;
 
