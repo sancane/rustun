@@ -135,7 +135,7 @@ impl MessageDecoderBuilder {
 }
 
 /// Class used to decode STUN messages
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct MessageDecoder {
     ctx: Option<DecoderContext>,
 }
@@ -411,7 +411,7 @@ impl<'a> AttributeEncoderContext<'a> {
 }
 
 /// Class used to encode STUN messages
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct MessageEncoder {
     ctx: Option<EncoderContext>,
 }
