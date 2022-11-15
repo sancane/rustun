@@ -157,7 +157,7 @@ pub mod protocols;
 pub use crate::context::StunPadding;
 
 pub use crate::algorithm::{Algorithm, AlgorithmId};
-pub use crate::attributes::{AttributeType, StunAttribute, StunAttributeType, Verifiable};
+pub use crate::attributes::{AttributeType, StunAttribute, StunAttributeType};
 pub use crate::context::{
     DecoderContext, DecoderContextBuilder, MessageDecoder, MessageDecoderBuilder,
 };
@@ -168,7 +168,7 @@ pub use crate::error::{StunError, StunErrorType};
 pub use crate::message::{
     MessageClass, MessageMethod, MessageType, StunMessage, StunMessageBuilder,
 };
-pub use crate::raw::MessageHeader;
+pub use crate::raw::{MessageHeader, MESSAGE_HEADER_SIZE};
 pub use crate::types::{
     AddressFamily, Cookie, CredentialMechanism, ErrorCode, HMACKey, TransactionId, MAGIC_COOKIE,
 };

@@ -17,8 +17,7 @@ macro_rules! message_integrity_attribute {
             pub struct [<Decodable $attr_class>]([u8; $attr_size]);
 
             impl [<Decodable $attr_class>] {
-                /// Validates the message using the `HMAC` value generated from the key
-                pub fn validate(&self, input: &[u8], key: &crate::types::HMACKey) -> bool {
+                fn validate(&self, input: &[u8], key: &crate::types::HMACKey) -> bool {
                     let expected = $attr_class::hmac_sha(key.as_bytes(), input);
                     expected == self.0
                 }
@@ -47,6 +46,19 @@ macro_rules! message_integrity_attribute {
                 /// - `key` - The key used for the `HMAC` depends on which credential mechanism is in use.
                 pub fn new(key: crate::types::HMACKey) -> Self {
                     $attr_class::Encodable([<Encodable $attr_class>](key))
+                }
+
+                #[doc = "Validates the message using the `HMAC` value generated from the key"]
+                #[doc = "# Arguments:"]
+                #[doc = "* `input`- the STUN message up to (but excluding) the [`" $attr_class "`] attribute itself."]
+                #[doc = "* `key`- the [`HMACKey`](crate::types::HMACKey) key"]
+                #[doc = "# Returns:"]
+                #[doc = "true if the message integrity attribute matches the computed value."]
+                pub fn validate(&self, input: &[u8], key: &crate::types::HMACKey) -> bool {
+                    match self {
+                        $attr_class::Decodable(attr) => attr.validate(input, key),
+                        $attr_class::Encodable(_) => false,
+                    }
                 }
             }
 
@@ -107,19 +119,14 @@ macro_rules! message_integrity_attribute {
 
         impl crate::attributes::Verifiable for $attr_class {
             fn verify(&self, input: &[u8], ctx: &crate::DecoderContext) -> bool {
-                match self {
-                    $attr_class::Decodable(attr) => {
-                        match ctx.key() {
-                            Some(k) => {
-                                attr.validate(input, k)
-                            }
-                            None => {
-                                // HMACKey required for validation
-                                false
-                            }
-                        }
+                match ctx.key() {
+                    Some(k) => {
+                        self.validate(input, k)
                     }
-                    _ => false,
+                    None => {
+                        // HMACKey required for validation
+                        false
+                    }
                 }
             }
         }

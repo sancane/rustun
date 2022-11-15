@@ -23,7 +23,7 @@ pub mod turn;
 
 /// Trait implemented by all [`StunAttribute`] that required validation
 /// when they are decoded
-pub trait Verifiable {
+pub(crate) trait Verifiable {
     /// Performs attribute validation on decoding
     /// # Arguments:
     /// - `input`: raw bytes buffer

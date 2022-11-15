@@ -42,10 +42,10 @@ message_integrity_attribute!(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::attributes::{EncodeAttributeValue, Verifiable};
+    use crate::attributes::EncodeAttributeValue;
     use crate::context::AttributeEncoderContext;
     use crate::StunAttribute;
-    use crate::{Algorithm, AlgorithmId, DecoderContextBuilder, HMACKey};
+    use crate::{Algorithm, AlgorithmId, HMACKey};
 
     #[test]
     fn encode_message_integrity_sha256_with_long_term() {
@@ -112,9 +112,7 @@ mod tests {
         let key = HMACKey::new_long_term(username, realm, password, algorithm)
             .expect("Could not create HMACKey");
 
-        let ctx = DecoderContextBuilder::default().with_key(key).build();
-
-        assert!(attr.verify(&input, &ctx));
+        assert!(attr.validate(&input, &key));
     }
 
     #[test]
