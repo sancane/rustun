@@ -5,7 +5,7 @@ use crate::error::{StunError, StunErrorType};
 use crate::strings;
 use std::convert::TryInto;
 use std::ops::Deref;
-use std::rc::Rc;
+use std::sync::Arc;
 
 const USER_HASH: u16 = 0x001E;
 const USER_HASH_LEN: usize = 32;
@@ -34,7 +34,7 @@ const USER_HASH_LEN: usize = 32;
 ///```
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct UserHash(Rc<[u8; USER_HASH_LEN]>);
+pub struct UserHash(Arc<[u8; USER_HASH_LEN]>);
 
 impl UserHash {
     /// Creates a new [`UserHash`] attribute.
@@ -50,7 +50,7 @@ impl UserHash {
         B: AsRef<str>,
     {
         let vec = do_sha256(name.as_ref(), realm.as_ref())?;
-        Ok(Self(Rc::new(vec.try_into().map_err(|_v| {
+        Ok(Self(Arc::new(vec.try_into().map_err(|_v| {
             StunError::new(StunErrorType::InvalidParam, "Can not create user hash")
         })?)))
     }
@@ -76,7 +76,7 @@ impl DecodeAttributeValue for UserHash {
             .then(|| {
                 let mut vec: [u8; USER_HASH_LEN] = [0x0; USER_HASH_LEN];
                 vec.clone_from_slice(raw_value);
-                (Self(Rc::new(vec)), raw_value.len())
+                (Self(Arc::new(vec)), raw_value.len())
             })
             .ok_or_else(|| {
                 StunError::new(

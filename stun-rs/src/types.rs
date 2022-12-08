@@ -8,7 +8,7 @@ use rand::Rng;
 use std::convert::{TryFrom, TryInto};
 use std::fmt;
 use std::ops::Deref;
-use std::rc::Rc;
+use std::sync::Arc;
 
 pub(crate) const MAGIC_COOKIE_SIZE: usize = 4;
 pub(crate) const TRANSACTION_ID_SIZE: usize = 12;
@@ -202,7 +202,7 @@ struct HMACKeyPriv {
 /// # }
 ///```
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct HMACKey(Rc<HMACKeyPriv>);
+pub struct HMACKey(Arc<HMACKeyPriv>);
 
 impl HMACKey {
     /// Creates a [`CredentialMechanism::ShortTerm`] key
@@ -218,7 +218,7 @@ impl HMACKey {
             .as_bytes()
             .to_vec();
         let mechanism = CredentialMechanism::ShortTerm;
-        Ok(HMACKey(Rc::new(HMACKeyPriv { mechanism, key })))
+        Ok(HMACKey(Arc::new(HMACKeyPriv { mechanism, key })))
     }
 
     /// Creates a [`CredentialMechanism::LongTerm`] key.
@@ -250,7 +250,7 @@ impl HMACKey {
         let key = HMACKey::get_key(&key_str, algorithm.as_ref())?;
 
         let mechanism = CredentialMechanism::LongTerm;
-        Ok(HMACKey(Rc::new(HMACKeyPriv { mechanism, key })))
+        Ok(HMACKey(Arc::new(HMACKeyPriv { mechanism, key })))
     }
 
     /// Gets the bytes representation of the key
