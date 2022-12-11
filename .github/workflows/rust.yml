@@ -41,6 +41,14 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Install LLVM and Clang
+      uses: KyleMayes/install-llvm-action@v1
+      with:
+        version: "10.0"
+    - name: Symlink libclang.so (Linux)
+      if: contains(matrix.os, 'ubuntu')
+      run: sudo ln -s libclang-11.so.1 /lib/x86_64-linux-gnu/libclang.so
+      working-directory: ${{ env.LLVM_PATH }}/lib
     - name: Install cargo-spellcheck
       run: cargo install --locked cargo-spellcheck
     - run: cargo spellcheck -m 99 --cfg=.github/workflows/spellchecker.cfg
