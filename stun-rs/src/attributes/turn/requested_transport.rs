@@ -23,7 +23,7 @@ const REQUESTED_TRANSPORT_SIZE: usize = 4;
 /// let attr = RequestedTrasport::from(protocols::UDP);
 /// assert_eq!(attr.protocol(), protocols::UDP);
 ///```
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct RequestedTrasport(ProtocolNumber);
 
 impl RequestedTrasport {

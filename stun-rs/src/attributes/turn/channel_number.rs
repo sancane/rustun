@@ -18,7 +18,7 @@ const CHANNEL_NUMBER_SIZE: usize = 4;
 /// let attr = ChannelNumber::new(1234);
 /// assert_eq!(attr.number(), 1234);
 ///```
-#[derive(Debug, Default, PartialEq, Eq)]
+#[derive(Debug, Default, PartialEq, Eq, Copy, Clone)]
 pub struct ChannelNumber {
     number: u16,
     rffu: u16,

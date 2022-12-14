@@ -12,11 +12,11 @@ const FINGERPRINT_XOR_VALUE: u32 = 0x5354_554e;
 /// The encodable fingerprint is computed as the CRC-32 of the STUN
 /// message up to (but excluding) the FINGERPRINT attribute itself,
 /// Xor'd with the 32-bit value `0x5354554e`.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct EncodableFingerprint {}
 
 /// The decodable fingerprint contains the CRC-32 value extracted from the STUN message
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct DecodableFingerprint(u32);
 
 impl DecodableFingerprint {
@@ -47,7 +47,7 @@ impl<'a> crate::Decode<'a> for DecodableFingerprint {
 /// let attr = Fingerprint::default();
 /// assert_eq!(attr.attribute_type(), AttributeType::from(0x8028));
 ///```
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum Fingerprint {
     /// The encodable [`Fingerprint`] attribute,
     Encodable(EncodableFingerprint),

@@ -23,7 +23,7 @@ pub const DATA: u16 = 0x0013;
 /// let attr = Data::new(raw_data);
 /// assert_eq!(raw_data, attr.as_bytes());
 ///```
-#[derive(Debug, Default, PartialEq, Eq)]
+#[derive(Debug, Default, PartialEq, Eq, Clone)]
 pub struct Data(Vec<u8>);
 
 impl Data {

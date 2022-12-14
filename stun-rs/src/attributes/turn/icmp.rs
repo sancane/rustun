@@ -70,7 +70,7 @@ pub type IcmpCode = BoundedU16<0, 511>;
 /// # Ok(())
 /// # }
 ///```
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct Icmp {
     icmp_type: IcmpType,
     icmp_code: IcmpCode,

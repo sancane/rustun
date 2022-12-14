@@ -22,7 +22,7 @@ const EVEN_PORT_SIZE: usize = 1;
 /// let attr = EvenPort::new(true);
 /// assert!(attr.reserve());
 ///```
-#[derive(Debug, Default, PartialEq, Eq)]
+#[derive(Debug, Default, PartialEq, Eq, Copy, Clone)]
 pub struct EvenPort(bool);
 
 impl EvenPort {
