@@ -24,7 +24,7 @@ const ADDRESS_ERROR_CODE: u16 = 0x8001;
 /// #  Ok(())
 /// # }
 ///```
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct AddressErrorCode {
     family: AddressFamily,
     error_code: ErrorCode,

@@ -31,7 +31,7 @@ const ERROR_CODE: u16 = 0x0009;
 /// #  Ok(())
 /// # }
 ///```
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ErrorCode(ErrorCodeType);
 
 impl ErrorCode {

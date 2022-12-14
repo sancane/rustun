@@ -45,7 +45,7 @@ impl From<AlgorithmId> for u16 {
 }
 
 /// An algorithm is the combination of the [`AlgorithmId`] and its parameters.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Algorithm {
     algorithm: AlgorithmId,
     params: Option<Vec<u8>>,

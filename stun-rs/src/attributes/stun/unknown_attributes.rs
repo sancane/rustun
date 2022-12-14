@@ -31,7 +31,7 @@ const UNKNOWN_ATTRIBUTES: u16 = 0x000A;
 /// attr.add(2134);
 /// assert_eq!(attr.iter().count(), 1);
 ///```
-#[derive(Debug, PartialEq, Eq, Default)]
+#[derive(Debug, PartialEq, Eq, Default, Clone)]
 pub struct UnknownAttributes {
     attrs: Vec<u16>,
 }

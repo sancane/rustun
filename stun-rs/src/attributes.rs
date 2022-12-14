@@ -39,9 +39,12 @@ pub(crate) trait AsVerifiable {
     }
 }
 
-pub(crate) trait EncodableStunAttribute: EncodeAttributeValue + StunAttributeType {}
+pub(crate) trait EncodableStunAttribute:
+    EncodeAttributeValue + StunAttributeType + Clone
+{
+}
 pub(crate) trait DecodableStunAttribute:
-    DecodeAttributeValue + StunAttributeType + AsVerifiable
+    DecodeAttributeValue + StunAttributeType + AsVerifiable + Clone
 {
 }
 
@@ -160,7 +163,7 @@ macro_rules! stunt_attribute_impl (
     ($(($class:ident, $mod:ident $(, $flag:literal)?)),*) => {
         paste::paste! {
             /// STUN Attributes that can be attached to a [`StunMessage`](crate::StunMessage)
-            #[derive(Debug)]
+            #[derive(Debug, Clone)]
             pub enum StunAttribute {
                 $(
                     $(#[cfg(feature = $flag)])?
@@ -284,6 +287,12 @@ stunt_attribute_impl!(
     (AddressErrorCode, turn, "turn"),
     (Icmp, turn, "turn")
 );
+
+impl From<&StunAttribute> for StunAttribute {
+    fn from(value: &StunAttribute) -> Self {
+        value.clone()
+    }
+}
 
 #[cfg(test)]
 mod tests {
