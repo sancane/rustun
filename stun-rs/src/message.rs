@@ -340,11 +340,44 @@ impl StunMessage {
             .iter()
             .find(|&attr| attr.attribute_type() == A::get_type())
     }
+
+    /// Removes and returns the first occurrence of the attribute type, shifting all attributes after it to the left.
+    /// or None if there is no such attribute.
+    pub fn remove<A>(&mut self) -> Option<StunAttribute>
+    where
+        A: StunAttributeType,
+    {
+        let Some(index) = self.attributes.iter().position(|value| value.attribute_type() == A::get_type()) else {
+            return None;
+        };
+        Some(self.attributes.remove(index))
+    }
+
+    /// Removes all attributes of the same type.
+    pub fn remove_all<A>(&mut self)
+    where
+        A: StunAttributeType,
+    {
+        self.attributes
+            .retain(|attr| attr.attribute_type() != A::get_type())
+    }
+
+    /// Removes all attributes of the type specified by the function call.
+    pub fn append<T>(&mut self, attribute: T)
+    where
+        T: Into<StunAttribute>,
+    {
+        self.attributes.push(attribute.into())
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{message::*, methods::BINDING};
+    use crate::{
+        attributes::stun::{Software, UserName},
+        message::*,
+        methods::BINDING,
+    };
 
     #[test]
     fn message_class() {
@@ -456,6 +489,73 @@ mod tests {
         let msg_type = MessageType::from(&buffer);
         assert_eq!(msg_type.class(), MessageClass::ErrorResponse);
         assert_eq!(msg_type.method(), method);
+    }
+
+    #[test]
+    fn message_attributes() {
+        let mut msg = StunMessageBuilder::new(BINDING, MessageClass::Request).build();
+        assert_eq!(msg.attributes().len(), 0);
+
+        msg.append(UserName::new("user0").expect("Failed to create UserName"));
+        assert_eq!(msg.attributes().len(), 1);
+        let attr = msg
+            .get::<UserName>()
+            .expect("UserName not found")
+            .as_user_name()
+            .expect("Can not convert to UserName");
+        assert_eq!(attr, "user0");
+
+        msg.append(UserName::new("user1").expect("Failed to create UserName"));
+        assert_eq!(msg.attributes().len(), 2);
+
+        msg.append(Software::new("version1").expect("Failed to create Software"));
+        assert_eq!(msg.attributes().len(), 3);
+        let attr = msg
+            .get::<Software>()
+            .expect("Software not found")
+            .as_software()
+            .expect("Can not convert to Software");
+        assert_eq!(attr, "version1");
+
+        msg.append(UserName::new("user2").expect("Failed to create UserName"));
+        assert_eq!(msg.attributes().len(), 4);
+
+        // Get will return the first ocurrence
+        let attr = msg
+            .get::<UserName>()
+            .expect("UserName not found")
+            .as_user_name()
+            .expect("Can not convert to UserName");
+        assert_eq!(attr, "user0");
+
+        // Remove the first ocurrence of UserName
+        let attr = msg.remove::<UserName>().expect("Can not remove UserName");
+        let username = attr.as_user_name().expect("Can not convert to UserName");
+        assert_eq!(username, "user0");
+        assert_eq!(msg.attributes().len(), 3);
+
+        // Get will return the first ocurrence
+        let attr = msg
+            .get::<UserName>()
+            .expect("UserName not found")
+            .as_user_name()
+            .expect("Can not convert to UserName");
+        assert_eq!(attr, "user1");
+
+        // Remove all UserNames attributes
+        msg.remove_all::<UserName>();
+        assert!(msg.get::<UserName>().is_none());
+        assert_eq!(msg.attributes().len(), 1);
+
+        // Remove all UserNames attributes should not affect
+        msg.remove_all::<UserName>();
+        assert!(msg.get::<UserName>().is_none());
+        assert_eq!(msg.attributes().len(), 1);
+
+        // Remove all Software attributes
+        msg.remove_all::<Software>();
+        assert!(msg.get::<Software>().is_none());
+        assert_eq!(msg.attributes().len(), 0);
     }
 
     #[test]
