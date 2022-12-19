@@ -8,6 +8,7 @@ mod mapped_address;
 mod message_integrity;
 mod message_integrity_sha256;
 mod nonce;
+pub mod nonce_cookie;
 mod password_algorithm;
 mod password_algorithms;
 mod realm;
