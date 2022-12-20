@@ -6,6 +6,7 @@ use precis_profiles::OpaqueString;
 use quoted_string_parser::{QuotedStringParseLevel, QuotedStringParser};
 use std::borrow::Cow;
 use std::convert::TryFrom;
+use std::fmt;
 
 pub fn opaque_string_prepapre(s: &str) -> Result<Cow<'_, str>, precis_core::Error> {
     OpaqueString::prepare(s)
@@ -82,6 +83,12 @@ impl QuotedString {
     /// Returns a slice representation of the "quoted-string"
     pub fn as_str(&self) -> &str {
         self.0.as_str()
+    }
+}
+
+impl fmt::Display for QuotedString {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 

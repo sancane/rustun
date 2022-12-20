@@ -9,7 +9,7 @@ use crate::{AttributeType, StunAttribute};
 /// unknown attribute is discarded unless the `experimental` flag is enabled and
 /// the decoder context had been configured to keep the data associated to unknown
 /// attributes.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Unknown {
     attr_type: AttributeType,
     attr_data: Option<Vec<u8>>,

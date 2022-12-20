@@ -36,7 +36,7 @@ const PASSWORD_ALGORITHM: u16 = 0x001D;
 /// assert_eq!(attr.algorithm(), AlgorithmId::Unassigned(255));
 /// assert_eq!(attr.parameters(), Some(params.as_ref()));
 ///```
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct PasswordAlgorithm(Algorithm);
 
 impl PasswordAlgorithm {
@@ -56,6 +56,12 @@ impl PasswordAlgorithm {
     /// Returns the parameters required by the algorithm.
     pub fn parameters(&self) -> Option<&[u8]> {
         self.0.parameters()
+    }
+}
+
+impl AsRef<Algorithm> for PasswordAlgorithm {
+    fn as_ref(&self) -> &Algorithm {
+        &self.0
     }
 }
 

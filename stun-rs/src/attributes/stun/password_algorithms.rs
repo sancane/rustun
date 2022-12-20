@@ -35,7 +35,7 @@ const PASSWORD_ALGORITHMS: u16 = 0x8002;
 /// attr.add(PasswordAlgorithm::new(Algorithm::from(AlgorithmId::MD5)));
 /// assert_eq!(attr.iter().count(), 1);
 ///```
-#[derive(Debug, PartialEq, Eq, Default)]
+#[derive(Debug, PartialEq, Eq, Default, Clone)]
 pub struct PasswordAlgorithms {
     algorithms: Vec<PasswordAlgorithm>,
 }
