@@ -44,7 +44,8 @@ impl PartialEq<[u8; MAGIC_COOKIE_SIZE]> for Cookie {
 
 impl PartialEq<&[u8; MAGIC_COOKIE_SIZE]> for Cookie {
     fn eq(&self, other: &&[u8; MAGIC_COOKIE_SIZE]) -> bool {
-        self.0 == BigEndian::read_u32(other.deref())
+        let slice = *other;
+        self.0 == BigEndian::read_u32(slice)
     }
 }
 
@@ -56,7 +57,8 @@ impl PartialEq<Cookie> for [u8; MAGIC_COOKIE_SIZE] {
 
 impl PartialEq<Cookie> for &[u8; MAGIC_COOKIE_SIZE] {
     fn eq(&self, other: &Cookie) -> bool {
-        other.0 == BigEndian::read_u32(self.deref())
+        let slice = *self;
+        other.0 == BigEndian::read_u32(slice)
     }
 }
 

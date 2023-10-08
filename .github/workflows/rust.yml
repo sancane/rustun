@@ -40,7 +40,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Install cargo-spellcheck
-      run: cargo install --locked cargo-spellcheck
-    - run: cargo spellcheck -m 99 --cfg=.github/workflows/spellchecker.cfg
+    - uses: taiki-e/install-action@v2
+      with:
+        tool: cargo-spellcheck
+
+    - uses: actions/checkout@v3
+
+    - name: Run cargo spellcheck
+      run: cargo-spellcheck --code 1 --cfg=.github/workflows/spellchecker.cfg
