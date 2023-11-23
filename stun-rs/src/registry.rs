@@ -39,6 +39,9 @@ lazy_static! {
         #[cfg(feature = "turn")]
         crate::attributes::turn::turn_register_attributes(&mut registry);
 
+        #[cfg(feature = "mobility")]
+        crate::attributes::mobility::mobility_register_attributes(&mut registry);
+
         registry
     };
 }
