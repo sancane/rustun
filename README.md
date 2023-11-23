@@ -16,7 +16,8 @@ Rust library designed to manipulate STUN messages. It supports:
 
 * [`RFC8489`](https://datatracker.ietf.org/doc/html/rfc8489). Session Traversal Utilities for NAT (STUN).
 * [`RFC8445`](https://datatracker.ietf.org/doc/html/rfc8445). Interactive Connectivity Establishment (ICE).
-* [`RFC8656`](https://datatracker.ietf.org/doc/html/rfc8656). Traversal Using Relays around NAT (TURN)
+* [`RFC8656`](https://datatracker.ietf.org/doc/html/rfc8656). Traversal Using Relays around NAT (TURN).
+* [`RFC8016`](https://datatracker.ietf.org/doc/html/rfc8016). Mobility with Traversal Using Relays around NAT (TURN).
 
 # Contributing
 
