@@ -4,8 +4,9 @@
 //! The implementation is based on:
 //! * [`RFC8489`](https://datatracker.ietf.org/doc/html/rfc8489). Session Traversal Utilities for NAT (STUN).
 //! * [`RFC8445`](https://datatracker.ietf.org/doc/html/rfc8445). Interactive Connectivity Establishment (ICE).
-//! * [`RFC8656`](https://datatracker.ietf.org/doc/html/rfc8656). Traversal Using Relays around NAT (TURN)
+//! * [`RFC8656`](https://datatracker.ietf.org/doc/html/rfc8656). Traversal Using Relays around NAT (TURN).
 //! * [`RFC5769`](https://datatracker.ietf.org/doc/html/rfc5769). Test Vectors for Session Traversal Utilities for NAT (STUN).
+//! * [`RFC8016`](https://datatracker.ietf.org/doc/html/rfc8016). Mobility with Traversal Using Relays around NAT (TURN).
 //!
 //! # Usage
 //! Example that creates and encodes a STUN Binding request
@@ -124,10 +125,13 @@
 //! This crate defines next feature flags that can be enabled:
 //! * **turn**: Extends support for parsing attributes defined in
 //!     [`RFC8656`](https://datatracker.ietf.org/doc/html/rfc8656).
-//!     Traversal Using Relays around NAT (TURN)
+//!     Traversal Using Relays around NAT (TURN).
 //! * **ice**: Extends support for parsing attributes defined in
 //!     [`RFC8445`](https://datatracker.ietf.org/doc/html/rfc8445).
 //!     Interactive Connectivity Establishment (ICE).
+//! * **mobility**: Extends support for parsing attributes defined in
+//!     [`RFC8016`](https://datatracker.ietf.org/doc/html/rfc8016).
+//!     Mobility with Traversal Using Relays around NAT (TURN).
 //! * **experiments**: This flag can be set to adjust some behavior
 //!     of the library, such as default padding. When testing protocols,
 //!     we can use this flag to force the library to keep the data

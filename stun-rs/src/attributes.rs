@@ -21,6 +21,9 @@ pub mod ice;
 #[cfg(feature = "turn")]
 pub mod turn;
 
+#[cfg(feature = "mobility")]
+pub mod mobility;
+
 /// Trait implemented by all [`StunAttribute`] that required validation
 /// when they are decoded
 pub(crate) trait Verifiable {
@@ -282,7 +285,9 @@ stunt_attribute_impl!(
     (AdditionalAddressFamily, turn, "turn"),
     (ReservationToken, turn, "turn"),
     (AddressErrorCode, turn, "turn"),
-    (Icmp, turn, "turn")
+    (Icmp, turn, "turn"),
+    // Mobility
+    (MobilityTicket, mobility, "mobility")
 );
 
 #[cfg(test)]
