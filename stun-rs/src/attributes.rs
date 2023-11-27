@@ -292,9 +292,10 @@ stunt_attribute_impl!(
     // Mobility
     (MobilityTicket, mobility, "mobility"),
     // Discovery
+    (OtherAddress, discovery, "discovery"),
+    (Padding, discovery, "discovery"),
     (ResponseOrigin, discovery, "discovery"),
-    (ResponsePort, discovery, "discovery"),
-    (OtherAddress, discovery, "discovery")
+    (ResponsePort, discovery, "discovery")
 );
 
 #[cfg(test)]
