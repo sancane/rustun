@@ -189,7 +189,7 @@ macro_rules! integer_attribute {
         crate::attributes::stunt_attribute!($class_name, $attr_type);
     )
 }
-#[cfg(any(feature = "ice", feature = "turn"))]
+#[cfg(any(feature = "ice", feature = "turn", feature = "discovery"))]
 pub(crate) use integer_attribute;
 
 fn socket_addr_xor(addr: &SocketAddr, transaction_id: &[u8; TRANSACTION_ID_SIZE]) -> SocketAddr {
