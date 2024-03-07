@@ -106,7 +106,7 @@ mod tests {
         assert_eq!(attributes.len(), 1);
 
         let attr = attributes
-            .get(0)
+            .first()
             .expect("Can not get first attribute")
             .as_unknown()
             .expect("Not unknown attribute");
@@ -125,7 +125,7 @@ mod tests {
         assert_eq!(attributes.len(), 1);
 
         let attr = attributes
-            .get(0)
+            .first()
             .expect("Can not get first attribute")
             .as_unknown()
             .expect("Not unknown attribute");
