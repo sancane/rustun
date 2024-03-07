@@ -1,7 +1,7 @@
 use crate::attributes::integrity_attr::message_integrity_attribute;
 use crate::attributes::integrity_attr::HmacSha;
 use crate::Decode;
-use hmacsha1::hmac_sha1;
+use hmac_sha1::hmac_sha1;
 use std::convert::TryInto;
 
 const MESSAGE_INTEGRITY: u16 = 0x0008;
