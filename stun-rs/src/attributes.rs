@@ -292,6 +292,7 @@ stunt_attribute_impl!(
     // Mobility
     (MobilityTicket, mobility, "mobility"),
     // Discovery
+    (ChangeRequest, discovery, "discovery"),
     (OtherAddress, discovery, "discovery"),
     (Padding, discovery, "discovery"),
     (ResponseOrigin, discovery, "discovery"),
