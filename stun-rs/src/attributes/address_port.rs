@@ -144,211 +144,6 @@ macro_rules! address_port_attribute {
 }
 pub(crate) use address_port_attribute;
 
-#[cfg(test)]
-mod tests {
-    use crate::error::StunErrorType;
-    use crate::{Decode, Encode};
-    use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
-
-    #[test]
-    fn decode_ipv4() {
-        // Test: 70.199.128.46, port:4604
-        let buffer = [0x00, 0x01, 0x11, 0xfc, 0x46, 0xc7, 0x80, 0x2e];
-
-        let (addr, size) = SocketAddr::decode(&buffer).expect("Can not decode SocketAddr");
-
-        assert_eq!(size, 8);
-        assert!(addr.is_ipv4());
-        assert_eq!(addr.port(), 4604);
-        assert_eq!(addr.to_string(), "70.199.128.46:4604");
-    }
-
-    #[test]
-    fn decode_ipv6() {
-        // Test: `1918:1716:1514:1312:1110:f0e:d0c:b0a:4604`, port:4604
-        let buffer = [
-            0x00, 0x02, 0x11, 0xfc, 25u8, 24u8, 23u8, 22u8, 21u8, 20u8, 19u8, 18u8, 17u8, 16u8,
-            15u8, 14u8, 13u8, 12u8, 11u8, 10u8,
-        ];
-
-        let (addr, size) = SocketAddr::decode(&buffer).expect("Can not decode SocketAddr");
-        assert_eq!(size, 20);
-        assert!(addr.is_ipv6());
-        assert!(IpAddr::V6(Ipv6Addr::new(
-            0x1918, 0x1716, 0x1514, 0x1312, 0x1110, 0x0f0e, 0x0d0c, 0x0b0a
-        ))
-        .eq(&addr.ip()));
-
-        assert_eq!(addr.port(), 4604);
-    }
-
-    #[test]
-    fn decode_error() {
-        // Try to decode mapped address from an empty buffer
-        let buffer = [];
-        let result = SocketAddr::decode(&buffer);
-        assert_eq!(
-            result.expect_err("Error expected"),
-            StunErrorType::SmallBuffer
-        );
-
-        // Buffer only contains family attribute
-        let buffer = [0x00, 0x01];
-        let result = SocketAddr::decode(&buffer);
-        assert_eq!(
-            result.expect_err("Error expected"),
-            StunErrorType::SmallBuffer
-        );
-
-        // Buffer only contains family attribute
-        let buffer = [0x00, 0x01, 0x00, 0x08];
-        let result = SocketAddr::decode(&buffer);
-        assert_eq!(
-            result.expect_err("Error expected"),
-            StunErrorType::SmallBuffer
-        );
-
-        // Length of IPv4 is shorter than the required IPv4 length (4 bytes)
-        let buffer = [0x00, 0x01, 0x11, 0xfc, 0x46, 0xc7, 0x80];
-        let result = SocketAddr::decode(&buffer);
-        assert_eq!(
-            result.expect_err("Error expected"),
-            StunErrorType::SmallBuffer
-        );
-
-        // Length of IPv6 is shorter than the required IPv6 length (16 bytes)
-        let buffer = [0x00, 0x02, 0x11, 0xfc, 0x46, 0xc7, 0x80, 0x2e];
-        let result = SocketAddr::decode(&buffer);
-        assert_eq!(
-            result.expect_err("Error expected"),
-            StunErrorType::SmallBuffer
-        );
-
-        // IP family(3) is neither IPv4(1) nor IPv6(2)
-        let buffer = [0x00, 0x03, 0x11, 0xfc, 0x46, 0xc7, 0x80, 0x2e];
-        let result = SocketAddr::decode(&buffer);
-        assert_eq!(
-            result.expect_err("Error expected"),
-            StunErrorType::InvalidParam
-        );
-    }
-
-    #[test]
-    fn decode_ipv4_from_longer_buffer() {
-        // Test: 70.199.128.46, port:4604
-        // Garbage extra bytes marked as 0xFF should not be taken into account in the final parsed value
-        let buffer = [0x00, 0x01, 0x11, 0xfc, 0x46, 0xc7, 0x80, 0x2e, 0xFF, 0xFF];
-
-        let (addr, size) = SocketAddr::decode(&buffer).expect("Can not decode SocketAddr");
-        assert_eq!(size, 8);
-        assert!(addr.is_ipv4());
-        assert_eq!(addr.to_string(), "70.199.128.46:4604");
-        assert_eq!(addr.port(), 4604);
-    }
-
-    #[test]
-    fn decode_ipv6_from_longer_buffer() {
-        // ADDRESS: `1918:1716:1514:1312:1110:f0e:d0c:b0a:4604`, port:4604
-        // Garbage extra bytes marked as 0xFF should not be taken into account in the final parsed value
-        let buffer = [
-            0x00, 0x02, 0x11, 0xfc, 25u8, 24u8, 23u8, 22u8, 21u8, 20u8, 19u8, 18u8, 17u8, 16u8,
-            15u8, 14u8, 13u8, 12u8, 11u8, 10u8, 0xFF, 0xFF, 0xFF, 0xFF,
-        ];
-
-        let (addr, size) = SocketAddr::decode(&buffer).expect("Can not decode SocketAddr");
-        assert_eq!(size, 20);
-        assert!(addr.is_ipv6());
-        assert!(IpAddr::V6(Ipv6Addr::new(
-            0x1918, 0x1716, 0x1514, 0x1312, 0x1110, 0x0f0e, 0x0d0c, 0x0b0a
-        ))
-        .eq(&addr.ip()));
-
-        assert_eq!(addr.port(), 4604);
-    }
-
-    #[test]
-    fn encode_ipv4() {
-        let port = 4604;
-        let ip_v4 = IpAddr::V4(Ipv4Addr::new(70, 199, 128, 46));
-        let addr = SocketAddr::new(ip_v4, port);
-
-        let mut buffer: [u8; 8] = [0xff; 8];
-        let result = addr.encode(&mut buffer);
-
-        assert_eq!(result, Ok(8));
-
-        // Expected: 70.199.128.46, port:4604
-        let cmp_buffer = [0x00, 0x01, 0x11, 0xfc, 0x46, 0xc7, 0x80, 0x2e];
-        assert_eq!(&buffer[..], &cmp_buffer[..]);
-    }
-
-    #[test]
-    fn encode_ipv6() {
-        let port = 4604;
-        let ip_v6 = IpAddr::V6(Ipv6Addr::new(
-            0x1918, 0x1716, 0x1514, 0x1312, 0x1110, 0x0f0e, 0x0d0c, 0x0b0a,
-        ));
-        let addr = SocketAddr::new(ip_v6, port);
-
-        let mut buffer: [u8; 20] = [0xff; 20];
-        let result = addr.encode(&mut buffer);
-
-        assert_eq!(result, Ok(20));
-
-        // Expected: `1918:1716:1514:1312:1110:f0e:d0c:b0a:4604`, port:4604
-        let cmp_buffer = [
-            0x00, 0x02, 0x11, 0xfc, 25u8, 24u8, 23u8, 22u8, 21u8, 20u8, 19u8, 18u8, 17u8, 16u8,
-            15u8, 14u8, 13u8, 12u8, 11u8, 10u8,
-        ];
-
-        assert_eq!(&buffer[..], &cmp_buffer[..]);
-    }
-
-    #[test]
-    fn encode_ipv4_error() {
-        let port = 4604;
-        let ip_v4 = IpAddr::V4(Ipv4Addr::new(70, 199, 128, 46));
-        let addr = SocketAddr::new(ip_v4, port);
-
-        let mut buffer = [];
-        let result = addr.encode(&mut buffer);
-        assert_eq!(
-            result.expect_err("Error expected"),
-            StunErrorType::SmallBuffer
-        );
-
-        let mut buffer: [u8; 7] = [0; 7];
-        let result = addr.encode(&mut buffer);
-        assert_eq!(
-            result.expect_err("Error expected"),
-            StunErrorType::SmallBuffer
-        );
-    }
-
-    #[test]
-    fn encode_ipv6_error() {
-        let port = 4604;
-        let ip_v6 = IpAddr::V6(Ipv6Addr::new(
-            0x1918, 0x1716, 0x1514, 0x1312, 0x1110, 0x0f0e, 0x0d0c, 0x0b0a,
-        ));
-        let addr = SocketAddr::new(ip_v6, port);
-
-        let mut buffer = [];
-        let result = addr.encode(&mut buffer);
-        assert_eq!(
-            result.expect_err("Error expected"),
-            StunErrorType::SmallBuffer
-        );
-
-        let mut buffer: [u8; 19] = [0; 19];
-        let result = addr.encode(&mut buffer);
-        assert_eq!(
-            result.expect_err("Error expected"),
-            StunErrorType::SmallBuffer
-        );
-    }
-}
-
 macro_rules! address_port_tests (
     ($attr_class:ident, $module:path) => {
         #[cfg(test)]
@@ -558,3 +353,208 @@ macro_rules! address_port_tests (
 );
 
 pub(crate) use address_port_tests;
+
+#[cfg(test)]
+mod tests {
+    use crate::error::StunErrorType;
+    use crate::{Decode, Encode};
+    use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
+
+    #[test]
+    fn decode_ipv4() {
+        // Test: 70.199.128.46, port:4604
+        let buffer = [0x00, 0x01, 0x11, 0xfc, 0x46, 0xc7, 0x80, 0x2e];
+
+        let (addr, size) = SocketAddr::decode(&buffer).expect("Can not decode SocketAddr");
+
+        assert_eq!(size, 8);
+        assert!(addr.is_ipv4());
+        assert_eq!(addr.port(), 4604);
+        assert_eq!(addr.to_string(), "70.199.128.46:4604");
+    }
+
+    #[test]
+    fn decode_ipv6() {
+        // Test: `1918:1716:1514:1312:1110:f0e:d0c:b0a:4604`, port:4604
+        let buffer = [
+            0x00, 0x02, 0x11, 0xfc, 25u8, 24u8, 23u8, 22u8, 21u8, 20u8, 19u8, 18u8, 17u8, 16u8,
+            15u8, 14u8, 13u8, 12u8, 11u8, 10u8,
+        ];
+
+        let (addr, size) = SocketAddr::decode(&buffer).expect("Can not decode SocketAddr");
+        assert_eq!(size, 20);
+        assert!(addr.is_ipv6());
+        assert!(IpAddr::V6(Ipv6Addr::new(
+            0x1918, 0x1716, 0x1514, 0x1312, 0x1110, 0x0f0e, 0x0d0c, 0x0b0a
+        ))
+        .eq(&addr.ip()));
+
+        assert_eq!(addr.port(), 4604);
+    }
+
+    #[test]
+    fn decode_error() {
+        // Try to decode mapped address from an empty buffer
+        let buffer = [];
+        let result = SocketAddr::decode(&buffer);
+        assert_eq!(
+            result.expect_err("Error expected"),
+            StunErrorType::SmallBuffer
+        );
+
+        // Buffer only contains family attribute
+        let buffer = [0x00, 0x01];
+        let result = SocketAddr::decode(&buffer);
+        assert_eq!(
+            result.expect_err("Error expected"),
+            StunErrorType::SmallBuffer
+        );
+
+        // Buffer only contains family attribute
+        let buffer = [0x00, 0x01, 0x00, 0x08];
+        let result = SocketAddr::decode(&buffer);
+        assert_eq!(
+            result.expect_err("Error expected"),
+            StunErrorType::SmallBuffer
+        );
+
+        // Length of IPv4 is shorter than the required IPv4 length (4 bytes)
+        let buffer = [0x00, 0x01, 0x11, 0xfc, 0x46, 0xc7, 0x80];
+        let result = SocketAddr::decode(&buffer);
+        assert_eq!(
+            result.expect_err("Error expected"),
+            StunErrorType::SmallBuffer
+        );
+
+        // Length of IPv6 is shorter than the required IPv6 length (16 bytes)
+        let buffer = [0x00, 0x02, 0x11, 0xfc, 0x46, 0xc7, 0x80, 0x2e];
+        let result = SocketAddr::decode(&buffer);
+        assert_eq!(
+            result.expect_err("Error expected"),
+            StunErrorType::SmallBuffer
+        );
+
+        // IP family(3) is neither IPv4(1) nor IPv6(2)
+        let buffer = [0x00, 0x03, 0x11, 0xfc, 0x46, 0xc7, 0x80, 0x2e];
+        let result = SocketAddr::decode(&buffer);
+        assert_eq!(
+            result.expect_err("Error expected"),
+            StunErrorType::InvalidParam
+        );
+    }
+
+    #[test]
+    fn decode_ipv4_from_longer_buffer() {
+        // Test: 70.199.128.46, port:4604
+        // Garbage extra bytes marked as 0xFF should not be taken into account in the final parsed value
+        let buffer = [0x00, 0x01, 0x11, 0xfc, 0x46, 0xc7, 0x80, 0x2e, 0xFF, 0xFF];
+
+        let (addr, size) = SocketAddr::decode(&buffer).expect("Can not decode SocketAddr");
+        assert_eq!(size, 8);
+        assert!(addr.is_ipv4());
+        assert_eq!(addr.to_string(), "70.199.128.46:4604");
+        assert_eq!(addr.port(), 4604);
+    }
+
+    #[test]
+    fn decode_ipv6_from_longer_buffer() {
+        // ADDRESS: `1918:1716:1514:1312:1110:f0e:d0c:b0a:4604`, port:4604
+        // Garbage extra bytes marked as 0xFF should not be taken into account in the final parsed value
+        let buffer = [
+            0x00, 0x02, 0x11, 0xfc, 25u8, 24u8, 23u8, 22u8, 21u8, 20u8, 19u8, 18u8, 17u8, 16u8,
+            15u8, 14u8, 13u8, 12u8, 11u8, 10u8, 0xFF, 0xFF, 0xFF, 0xFF,
+        ];
+
+        let (addr, size) = SocketAddr::decode(&buffer).expect("Can not decode SocketAddr");
+        assert_eq!(size, 20);
+        assert!(addr.is_ipv6());
+        assert!(IpAddr::V6(Ipv6Addr::new(
+            0x1918, 0x1716, 0x1514, 0x1312, 0x1110, 0x0f0e, 0x0d0c, 0x0b0a
+        ))
+        .eq(&addr.ip()));
+
+        assert_eq!(addr.port(), 4604);
+    }
+
+    #[test]
+    fn encode_ipv4() {
+        let port = 4604;
+        let ip_v4 = IpAddr::V4(Ipv4Addr::new(70, 199, 128, 46));
+        let addr = SocketAddr::new(ip_v4, port);
+
+        let mut buffer: [u8; 8] = [0xff; 8];
+        let result = addr.encode(&mut buffer);
+
+        assert_eq!(result, Ok(8));
+
+        // Expected: 70.199.128.46, port:4604
+        let cmp_buffer = [0x00, 0x01, 0x11, 0xfc, 0x46, 0xc7, 0x80, 0x2e];
+        assert_eq!(&buffer[..], &cmp_buffer[..]);
+    }
+
+    #[test]
+    fn encode_ipv6() {
+        let port = 4604;
+        let ip_v6 = IpAddr::V6(Ipv6Addr::new(
+            0x1918, 0x1716, 0x1514, 0x1312, 0x1110, 0x0f0e, 0x0d0c, 0x0b0a,
+        ));
+        let addr = SocketAddr::new(ip_v6, port);
+
+        let mut buffer: [u8; 20] = [0xff; 20];
+        let result = addr.encode(&mut buffer);
+
+        assert_eq!(result, Ok(20));
+
+        // Expected: `1918:1716:1514:1312:1110:f0e:d0c:b0a:4604`, port:4604
+        let cmp_buffer = [
+            0x00, 0x02, 0x11, 0xfc, 25u8, 24u8, 23u8, 22u8, 21u8, 20u8, 19u8, 18u8, 17u8, 16u8,
+            15u8, 14u8, 13u8, 12u8, 11u8, 10u8,
+        ];
+
+        assert_eq!(&buffer[..], &cmp_buffer[..]);
+    }
+
+    #[test]
+    fn encode_ipv4_error() {
+        let port = 4604;
+        let ip_v4 = IpAddr::V4(Ipv4Addr::new(70, 199, 128, 46));
+        let addr = SocketAddr::new(ip_v4, port);
+
+        let mut buffer = [];
+        let result = addr.encode(&mut buffer);
+        assert_eq!(
+            result.expect_err("Error expected"),
+            StunErrorType::SmallBuffer
+        );
+
+        let mut buffer: [u8; 7] = [0; 7];
+        let result = addr.encode(&mut buffer);
+        assert_eq!(
+            result.expect_err("Error expected"),
+            StunErrorType::SmallBuffer
+        );
+    }
+
+    #[test]
+    fn encode_ipv6_error() {
+        let port = 4604;
+        let ip_v6 = IpAddr::V6(Ipv6Addr::new(
+            0x1918, 0x1716, 0x1514, 0x1312, 0x1110, 0x0f0e, 0x0d0c, 0x0b0a,
+        ));
+        let addr = SocketAddr::new(ip_v6, port);
+
+        let mut buffer = [];
+        let result = addr.encode(&mut buffer);
+        assert_eq!(
+            result.expect_err("Error expected"),
+            StunErrorType::SmallBuffer
+        );
+
+        let mut buffer: [u8; 19] = [0; 19];
+        let result = addr.encode(&mut buffer);
+        assert_eq!(
+            result.expect_err("Error expected"),
+            StunErrorType::SmallBuffer
+        );
+    }
+}
