@@ -59,6 +59,12 @@ impl PasswordAlgorithm {
     }
 }
 
+impl AsRef<Algorithm> for PasswordAlgorithm {
+    fn as_ref(&self) -> &Algorithm {
+        &self.0
+    }
+}
+
 impl DecodeAttributeValue for PasswordAlgorithm {
     fn decode(ctx: AttributeDecoderContext) -> Result<(Self, usize), StunError> {
         // Check if we can pick algorithm (2 bytes) and parameters length (2 bytes)
