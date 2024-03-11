@@ -12,7 +12,7 @@ const CHANGE_REQUEST: u16 = 0x0003;
 /// "change IP" and "change port" flags are useful for determining the
 /// current filtering behavior of a NAT. They instruct the server to
 /// send the Binding Responses from the alternate source IP address
-/// and/or alternate port. The change resquest attribute is optional in
+/// and/or alternate port. The change request attribute is optional in
 /// the Binding Request.
 #[derive(Debug, Clone, Copy)]
 pub struct ChangeRequest(u32);

@@ -6,7 +6,7 @@ crate::common::integer_attribute!(
     /// Response will be sent to.  For servers which support the response
     /// port attribute, the Binding Response MUST be transmitted to the
     /// source IP address of the Binding Request and the port contained in
-    /// respose port.
+    /// response port.
     ///
     /// # Examples
     ///```rust
