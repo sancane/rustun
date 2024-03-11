@@ -98,7 +98,7 @@ impl Encode for &str {
     }
 }
 
-#[cfg(any(feature = "ice", feature = "turn"))]
+#[cfg(any(feature = "ice", feature = "turn", feature = "discovery"))]
 // Creates a STUN attribute which contains an integer field.
 macro_rules! integer_attribute {
     (
