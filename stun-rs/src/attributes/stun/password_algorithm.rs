@@ -124,6 +124,17 @@ mod tests {
     use crate::StunAttribute;
 
     #[test]
+    fn password_algorithm() {
+        let algorithm = Algorithm::from(AlgorithmId::MD5);
+        let attr = PasswordAlgorithm::new(algorithm);
+
+        let algorithm = Algorithm::from(AlgorithmId::MD5);
+        assert_eq!(AlgorithmId::MD5, attr.algorithm());
+        assert_eq!(&algorithm, attr.as_ref());
+        assert!(attr.parameters().is_none());
+    }
+
+    #[test]
     fn decode_password_algorithm() {
         let dummy_msg: [u8; 0] = [0x0; 0];
         let buffer = [0x00, 0x00, 0x00, 0x00];
@@ -251,6 +262,9 @@ mod tests {
         assert!(attr.is_password_algorithm());
         assert!(attr.as_password_algorithm().is_ok());
         assert!(attr.as_unknown().is_err());
+
+        assert!(attr.attribute_type().is_comprehension_required());
+        assert!(!attr.attribute_type().is_comprehension_optional());
 
         let dbg_fmt = format!("{:?}", attr);
         assert_eq!(

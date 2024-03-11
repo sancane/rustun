@@ -129,6 +129,9 @@ mod tests {
         assert!(attr.as_channel_number().is_ok());
         assert!(attr.as_error_code().is_err());
 
+        assert!(attr.attribute_type().is_comprehension_required());
+        assert!(!attr.attribute_type().is_comprehension_optional());
+
         let dbg_fmt = format!("{:?}", attr);
         assert_eq!(
             "ChannelNumber(ChannelNumber { number: 1234, rffu: 0 })",

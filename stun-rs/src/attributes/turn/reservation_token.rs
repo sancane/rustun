@@ -154,6 +154,9 @@ mod tests {
         assert!(attr.as_reservation_token().is_ok());
         assert!(attr.as_unknown().is_err());
 
+        assert!(attr.attribute_type().is_comprehension_required());
+        assert!(!attr.attribute_type().is_comprehension_optional());
+
         let dbg_fmt = format!("{:?}", attr);
         assert_eq!(
             "ReservationToken(ReservationToken([1, 2, 3, 4, 5, 6, 7, 8]))",

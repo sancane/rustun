@@ -79,6 +79,16 @@ mod tests {
     use crate::StunAttribute;
 
     #[test]
+    fn error_code() {
+        let error = ErrorCodeType::new(318, "test reason").expect("Can not create error code type");
+        let attr = ErrorCode::from(error);
+        assert_eq!(attr.error_code().class(), 3);
+        assert_eq!(attr.error_code().number(), 18);
+        assert_eq!(attr.error_code().reason(), "test reason");
+        assert_eq!(attr.error_code().error_code(), 318);
+    }
+
+    #[test]
     fn decode_error_code() {
         let dummy_msg: [u8; 0] = [0x0; 0];
         let buffer = [
@@ -168,6 +178,9 @@ mod tests {
         assert!(attr.is_error_code());
         assert!(attr.as_error_code().is_ok());
         assert!(attr.as_unknown().is_err());
+
+        assert!(attr.attribute_type().is_comprehension_required());
+        assert!(!attr.attribute_type().is_comprehension_optional());
 
         let dbg_fmt = format!("{:?}", attr);
         assert_eq!(

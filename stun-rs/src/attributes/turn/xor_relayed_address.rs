@@ -34,6 +34,9 @@ mod tests {
         assert!(attr.as_xor_relayed_address().is_ok());
         assert!(attr.as_unknown().is_err());
 
+        assert!(attr.attribute_type().is_comprehension_required());
+        assert!(!attr.attribute_type().is_comprehension_optional());
+
         let dbg_fmt = format!("{:?}", attr);
         assert_eq!(
             "XorRelayedAddress(XorRelayedAddress(127.0.0.1:8080))",
