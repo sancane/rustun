@@ -142,7 +142,7 @@ mod tests {
     #[test]
     fn nonce_cookie_error() {
         let value = String::from("f//499k954d6OL34oL9FSTvy64sA");
-        let nonce = Nonce::new(&value).expect("Can not create a Nonce attribute");
+        let nonce = Nonce::new(value).expect("Can not create a Nonce attribute");
         assert!(!nonce.is_nonce_cookie());
         let result = nonce.security_features();
         assert_eq!(
@@ -152,7 +152,7 @@ mod tests {
 
         // Error decoding base64 security features
         let value = String::from("obMatJos2f//==8");
-        let nonce = Nonce::new(&value).expect("Can not create a Nonce attribute");
+        let nonce = Nonce::new(value).expect("Can not create a Nonce attribute");
         assert!(nonce.is_nonce_cookie());
         let result = nonce.security_features();
         assert_eq!(

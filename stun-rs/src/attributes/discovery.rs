@@ -9,6 +9,7 @@ mod response_port;
 
 use crate::registry::DecoderRegistry;
 pub use change_request::ChangeRequest;
+pub use change_request::ChangeRequestFlags;
 pub use other_address::OtherAddress;
 pub use padding::Padding;
 pub use response_origin::ResponseOrigin;
