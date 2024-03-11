@@ -327,64 +327,6 @@ macro_rules! empty_attribute {
 #[cfg(any(feature = "ice", feature = "turn"))]
 pub(crate) use empty_attribute;
 
-#[cfg(test)]
-mod tests {
-    use crate::common::*;
-
-    #[test]
-    fn test_padding() {
-        // Check all u16 range
-        for i in 0..u16::MAX {
-            let v = i % 4;
-            let v = if v == 0 { 0 } else { 4 - v };
-            assert_eq!(padding(i.into()), v as usize);
-        }
-    }
-
-    #[test]
-    fn test_fill_padding() {
-        let mut buffer = [];
-        assert!(fill_padding_value(&mut buffer, 0, DEFAULT_PADDING_VALUE).is_ok());
-        assert_eq!(
-            fill_padding_value(&mut buffer, 1, DEFAULT_PADDING_VALUE).expect_err("Error expected"),
-            StunErrorType::SmallBuffer
-        );
-
-        let mut buffer = [0x01];
-        assert!(fill_padding_value(&mut buffer, 0, DEFAULT_PADDING_VALUE).is_ok());
-        let expected_buffer = [0x01];
-        assert_eq!(&buffer[..], &expected_buffer[..]);
-
-        assert!(fill_padding_value(&mut buffer, 1, DEFAULT_PADDING_VALUE).is_ok());
-        let expected_buffer = [0x00];
-        assert_eq!(&buffer[..], &expected_buffer[..]);
-        assert_eq!(
-            fill_padding_value(&mut buffer, 2, DEFAULT_PADDING_VALUE).expect_err("Error expected"),
-            StunErrorType::SmallBuffer
-        );
-
-        let mut buffer = [0x01, 0x01];
-        assert!(fill_padding_value(&mut buffer, 0, DEFAULT_PADDING_VALUE).is_ok());
-        let expected_buffer = [0x01, 0x01];
-        assert_eq!(&buffer[..], &expected_buffer[..]);
-
-        assert_eq!(
-            fill_padding_value(&mut buffer, 3, DEFAULT_PADDING_VALUE).expect_err("Error expected"),
-            StunErrorType::SmallBuffer
-        );
-        assert_eq!(&buffer[..], &expected_buffer[..]);
-
-        assert!(fill_padding_value(&mut buffer, 1, DEFAULT_PADDING_VALUE).is_ok());
-        let expected_buffer = [0x00, 0x01];
-        assert_eq!(&buffer[..], &expected_buffer[..]);
-
-        let mut buffer = [0x01, 0x01];
-        assert!(fill_padding_value(&mut buffer, 2, DEFAULT_PADDING_VALUE).is_ok());
-        let expected_buffer = [0x00, 0x00];
-        assert_eq!(&buffer[..], &expected_buffer[..]);
-    }
-}
-
 // Creates a STUN attribute which contains a string field.
 macro_rules! string_attribute {
     (
@@ -539,3 +481,61 @@ macro_rules! string_attribute {
 }
 
 pub(crate) use string_attribute;
+
+#[cfg(test)]
+mod tests {
+    use crate::common::*;
+
+    #[test]
+    fn test_padding() {
+        // Check all u16 range
+        for i in 0..u16::MAX {
+            let v = i % 4;
+            let v = if v == 0 { 0 } else { 4 - v };
+            assert_eq!(padding(i.into()), v as usize);
+        }
+    }
+
+    #[test]
+    fn test_fill_padding() {
+        let mut buffer = [];
+        assert!(fill_padding_value(&mut buffer, 0, DEFAULT_PADDING_VALUE).is_ok());
+        assert_eq!(
+            fill_padding_value(&mut buffer, 1, DEFAULT_PADDING_VALUE).expect_err("Error expected"),
+            StunErrorType::SmallBuffer
+        );
+
+        let mut buffer = [0x01];
+        assert!(fill_padding_value(&mut buffer, 0, DEFAULT_PADDING_VALUE).is_ok());
+        let expected_buffer = [0x01];
+        assert_eq!(&buffer[..], &expected_buffer[..]);
+
+        assert!(fill_padding_value(&mut buffer, 1, DEFAULT_PADDING_VALUE).is_ok());
+        let expected_buffer = [0x00];
+        assert_eq!(&buffer[..], &expected_buffer[..]);
+        assert_eq!(
+            fill_padding_value(&mut buffer, 2, DEFAULT_PADDING_VALUE).expect_err("Error expected"),
+            StunErrorType::SmallBuffer
+        );
+
+        let mut buffer = [0x01, 0x01];
+        assert!(fill_padding_value(&mut buffer, 0, DEFAULT_PADDING_VALUE).is_ok());
+        let expected_buffer = [0x01, 0x01];
+        assert_eq!(&buffer[..], &expected_buffer[..]);
+
+        assert_eq!(
+            fill_padding_value(&mut buffer, 3, DEFAULT_PADDING_VALUE).expect_err("Error expected"),
+            StunErrorType::SmallBuffer
+        );
+        assert_eq!(&buffer[..], &expected_buffer[..]);
+
+        assert!(fill_padding_value(&mut buffer, 1, DEFAULT_PADDING_VALUE).is_ok());
+        let expected_buffer = [0x00, 0x01];
+        assert_eq!(&buffer[..], &expected_buffer[..]);
+
+        let mut buffer = [0x01, 0x01];
+        assert!(fill_padding_value(&mut buffer, 2, DEFAULT_PADDING_VALUE).is_ok());
+        let expected_buffer = [0x00, 0x00];
+        assert_eq!(&buffer[..], &expected_buffer[..]);
+    }
+}
