@@ -39,6 +39,9 @@ mod tests {
         assert!(attr.as_response_origin().is_ok());
         assert!(attr.as_error_code().is_err());
 
+        assert!(!attr.attribute_type().is_comprehension_required());
+        assert!(attr.attribute_type().is_comprehension_optional());
+
         let dbg_fmt = format!("{:?}", attr);
         assert_eq!("ResponseOrigin(ResponseOrigin(127.0.0.1:8080))", dbg_fmt);
     }

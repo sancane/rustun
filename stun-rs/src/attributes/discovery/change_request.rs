@@ -116,6 +116,9 @@ mod tests {
         assert!(attr.as_change_request().is_ok());
         assert!(attr.as_error_code().is_err());
 
+        assert!(attr.attribute_type().is_comprehension_required());
+        assert!(!attr.attribute_type().is_comprehension_optional());
+
         let dbg_fmt = format!("{:?}", attr);
         assert_eq!("ChangeRequest(ChangeRequest(2))", dbg_fmt);
     }

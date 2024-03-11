@@ -26,3 +26,25 @@ crate::common::string_attribute!(
     MAX_ENCODED_SIZE,
     MAX_DECODED_SIZE,
 );
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::StunAttribute;
+
+    #[test]
+    fn other_address_server_stunt_attribute() {
+        let attr = StunAttribute::Padding(
+            Padding::new("test").expect("Failed to create padding attribute"),
+        );
+        assert!(attr.is_padding());
+        assert!(attr.as_padding().is_ok());
+        assert!(attr.as_error_code().is_err());
+
+        assert!(attr.attribute_type().is_comprehension_required());
+        assert!(!attr.attribute_type().is_comprehension_optional());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!("Padding(Padding(\"test\"))", dbg_fmt);
+    }
+}
