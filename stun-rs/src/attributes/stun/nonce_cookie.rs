@@ -28,14 +28,13 @@ impl Nonce {
     where
         S: AsRef<str>,
     {
-        let value = Nonce::new(value)?;
         let features: u32 = match flags {
             Some(flags) => flags.bits(),
             None => 0,
         };
 
         let base64 = base64::encode(&features.to_be_bytes()[..3]);
-        let value = format!("{}{}{}", NONCE_COOKIE_HEADER, base64, value.as_str());
+        let value = format!("{}{}{}", NONCE_COOKIE_HEADER, base64, value.as_ref());
         Nonce::new(value)
     }
 
