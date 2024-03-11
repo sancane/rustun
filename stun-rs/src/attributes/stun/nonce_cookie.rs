@@ -15,7 +15,7 @@ pub enum StunSecurityFeatures {
     /// Password algorithms
     PasswordAlgorithms = 1 << 31,
     /// User name anonymity
-    UserNameAnonimity = 1 << 30,
+    UserNameAnonymity = 1 << 30,
 }
 
 impl Nonce {
@@ -91,7 +91,7 @@ mod tests {
             .security_features()
             .expect("Can not get feature flags");
         assert!(!flags.contains(StunSecurityFeatures::PasswordAlgorithms));
-        assert!(!flags.contains(StunSecurityFeatures::UserNameAnonimity));
+        assert!(!flags.contains(StunSecurityFeatures::UserNameAnonymity));
 
         let flags: BitFlags<StunSecurityFeatures> =
             make_bitflags!(StunSecurityFeatures::{PasswordAlgorithms});
@@ -102,10 +102,10 @@ mod tests {
             .security_features()
             .expect("Can not get feature flags");
         assert!(flags.contains(StunSecurityFeatures::PasswordAlgorithms));
-        assert!(!flags.contains(StunSecurityFeatures::UserNameAnonimity));
+        assert!(!flags.contains(StunSecurityFeatures::UserNameAnonymity));
 
         let flags: BitFlags<StunSecurityFeatures> =
-            make_bitflags!(StunSecurityFeatures::{UserNameAnonimity});
+            make_bitflags!(StunSecurityFeatures::{UserNameAnonymity});
         let nonce =
             Nonce::new_nonce_cookie(value, Some(flags)).expect("Can not create nonce cookie");
         assert!(nonce.is_nonce_cookie());
@@ -113,10 +113,10 @@ mod tests {
             .security_features()
             .expect("Can not get feature flags");
         assert!(!flags.contains(StunSecurityFeatures::PasswordAlgorithms));
-        assert!(flags.contains(StunSecurityFeatures::UserNameAnonimity));
+        assert!(flags.contains(StunSecurityFeatures::UserNameAnonymity));
 
         let flags: BitFlags<StunSecurityFeatures> =
-            make_bitflags!(StunSecurityFeatures::{PasswordAlgorithms | UserNameAnonimity});
+            make_bitflags!(StunSecurityFeatures::{PasswordAlgorithms | UserNameAnonymity});
         let nonce =
             Nonce::new_nonce_cookie(value, Some(flags)).expect("Can not create nonce cookie");
         assert!(nonce.is_nonce_cookie());
@@ -124,18 +124,18 @@ mod tests {
             .security_features()
             .expect("Can not get feature flags");
         assert!(flags.contains(StunSecurityFeatures::PasswordAlgorithms));
-        assert!(flags.contains(StunSecurityFeatures::UserNameAnonimity));
+        assert!(flags.contains(StunSecurityFeatures::UserNameAnonymity));
 
         // Check empty nonce
         let flags: BitFlags<StunSecurityFeatures> =
-            make_bitflags!(StunSecurityFeatures::{PasswordAlgorithms | UserNameAnonimity});
+            make_bitflags!(StunSecurityFeatures::{PasswordAlgorithms | UserNameAnonymity});
         let nonce = Nonce::new_nonce_cookie("", Some(flags)).expect("Can not create nonce cookie");
         assert!(nonce.is_nonce_cookie());
         let flags = nonce
             .security_features()
             .expect("Can not get feature flags");
         assert!(flags.contains(StunSecurityFeatures::PasswordAlgorithms));
-        assert!(flags.contains(StunSecurityFeatures::UserNameAnonimity));
+        assert!(flags.contains(StunSecurityFeatures::UserNameAnonymity));
     }
 
     #[test]
