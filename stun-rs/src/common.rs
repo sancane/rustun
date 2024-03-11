@@ -189,7 +189,7 @@ macro_rules! integer_attribute {
         crate::attributes::stunt_attribute!($class_name, $attr_type);
     )
 }
-#[cfg(any(feature = "ice", feature = "turn"))]
+#[cfg(any(feature = "ice", feature = "turn", feature = "discovery"))]
 pub(crate) use integer_attribute;
 
 fn socket_addr_xor(addr: &SocketAddr, transaction_id: &[u8; TRANSACTION_ID_SIZE]) -> SocketAddr {
@@ -326,6 +326,161 @@ macro_rules! empty_attribute {
 }
 #[cfg(any(feature = "ice", feature = "turn"))]
 pub(crate) use empty_attribute;
+
+// Creates a STUN attribute which contains a string field.
+macro_rules! string_attribute {
+    (
+        $(#[$meta:meta])*
+        $class_name:ident,
+        $attr_type:ident,
+        $max_encoded_size:ident,
+        $max_decoded_size:ident,
+    ) => (
+        $(#[$meta])*
+        #[derive(Debug, PartialEq, Clone, Hash, Eq, PartialOrd, Ord)]
+        pub struct $class_name(String);
+
+        impl $class_name {
+            /// Creates a new SOFTWARE attribute
+            pub fn new<S>(value: S) -> Result<Self, crate::StunError>
+            where
+                S: Into<String>,
+            {
+                let value: String = value.into();
+                let value_len = value.len();
+                (value.len() <= $max_encoded_size)
+                    .then_some(Self(value))
+                    .ok_or_else(|| {
+                        crate::StunError::new(
+                            crate::StunErrorType::ValueTooLong,
+                            format!(
+                                "Value length {} > max. encoded size {}",
+                                value_len, $max_encoded_size
+                            ),
+                        )
+                    })
+            }
+
+            paste::paste! {
+                #[doc = "Returns the value of the `" $class_name "` attribute"]
+                pub fn as_str(&self) -> &str {
+                    self.0.as_str()
+                }
+            }
+        }
+
+        impl std::convert::TryFrom<&str> for $class_name {
+            type Error = crate::StunError;
+
+            fn try_from(value: &str) -> Result<Self, Self::Error> {
+                Self::new(value)
+            }
+        }
+
+        impl std::convert::TryFrom<&String> for $class_name {
+            type Error = crate::StunError;
+
+            fn try_from(value: &String) -> Result<Self, Self::Error> {
+                Self::new(value)
+            }
+        }
+
+        impl std::convert::TryFrom<String> for $class_name {
+            type Error = crate::StunError;
+
+            fn try_from(value: String) -> Result<Self, Self::Error> {
+                Self::new(value)
+            }
+        }
+
+        impl PartialEq<&str> for $class_name {
+            fn eq(&self, other: &&str) -> bool {
+                self.as_str().eq(*other)
+            }
+        }
+
+        impl PartialEq<$class_name> for &str {
+            fn eq(&self, other: &$class_name) -> bool {
+                other.as_str().eq(*self)
+            }
+        }
+
+        impl PartialEq<str> for $class_name {
+            fn eq(&self, other: &str) -> bool {
+                self.as_str().eq(other)
+            }
+        }
+
+        impl PartialEq<String> for $class_name {
+            fn eq(&self, other: &String) -> bool {
+                other.eq(self.as_str())
+            }
+        }
+
+        impl PartialEq<$class_name> for String {
+            fn eq(&self, other: &$class_name) -> bool {
+                self.eq(other.as_str())
+            }
+        }
+
+        impl AsRef<str> for $class_name {
+            fn as_ref(&self) -> &str {
+                &self.0
+            }
+        }
+
+        impl AsRef<String> for $class_name {
+            fn as_ref(&self) -> &String {
+                &self.0
+            }
+        }
+
+        impl crate::attributes::DecodeAttributeValue for $class_name {
+            fn decode(ctx: crate::context::AttributeDecoderContext) -> Result<(Self, usize), crate::StunError> {
+                use crate::Decode;
+                let raw_value = ctx.raw_value();
+
+                if raw_value.len() > $max_decoded_size {
+                    return Err(crate::StunError::new(
+                        crate::StunErrorType::ValueTooLong,
+                        format!(
+                            "Value length {} > max. decoded size {}",
+                            raw_value.len(),
+                            $max_decoded_size
+                        ),
+                    ));
+                }
+
+                let (val, size) = <&'_ str as Decode<'_>>::decode(ctx.raw_value())?;
+                Ok((Self(val.to_string()), size))
+            }
+        }
+
+        impl crate::attributes::EncodeAttributeValue for $class_name {
+            fn encode(&self, mut ctx: crate::context::AttributeEncoderContext) -> Result<usize, crate::StunError> {
+                use crate::Encode;
+                if self.as_str().len() > $max_encoded_size {
+                    return Err(crate::StunError::new(
+                        crate::StunErrorType::ValueTooLong,
+                        format!(
+                            "Value length {} > max. encoded size {}",
+                            self.as_str().len(),
+                            $max_encoded_size
+                        ),
+                    ));
+                }
+
+                self.0.as_str().encode(ctx.raw_value_mut())
+            }
+        }
+
+        impl crate::attributes::AsVerifiable for $class_name {}
+
+        crate::attributes::stunt_attribute!($class_name, $attr_type);
+    )
+}
+
+pub(crate) use string_attribute;
 
 #[cfg(test)]
 mod tests {

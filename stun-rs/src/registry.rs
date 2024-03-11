@@ -42,6 +42,9 @@ lazy_static! {
         #[cfg(feature = "mobility")]
         crate::attributes::mobility::mobility_register_attributes(&mut registry);
 
+        #[cfg(feature = "discovery")]
+        crate::attributes::discovery::discovery_register_attributes(&mut registry);
+
         registry
     };
 }

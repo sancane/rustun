@@ -194,5 +194,8 @@ mod tests {
         assert!(attr.is_mobility_ticket());
         assert!(attr.as_mobility_ticket().is_ok());
         assert!(attr.as_unknown().is_err());
+
+        assert!(!attr.attribute_type().is_comprehension_required());
+        assert!(attr.attribute_type().is_comprehension_optional());
     }
 }

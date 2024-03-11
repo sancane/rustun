@@ -14,10 +14,12 @@ Workspace that contains tools and libraries implemented in Rust for Session Trav
 
 Rust library designed to manipulate STUN messages. It supports:
 
-* [`RFC8489`](https://datatracker.ietf.org/doc/html/rfc8489). Session Traversal Utilities for NAT (STUN).
-* [`RFC8445`](https://datatracker.ietf.org/doc/html/rfc8445). Interactive Connectivity Establishment (ICE).
-* [`RFC8656`](https://datatracker.ietf.org/doc/html/rfc8656). Traversal Using Relays around NAT (TURN).
+* [`RFC5769`](https://datatracker.ietf.org/doc/html/rfc5769). Test Vectors for Session Traversal Utilities for NAT (STUN).
+* [`RFC5780`](https://datatracker.ietf.org/doc/html/rfc5780). NAT Behavior Discovery Using Session Traversal Utilities for NAT (STUN).
 * [`RFC8016`](https://datatracker.ietf.org/doc/html/rfc8016). Mobility with Traversal Using Relays around NAT (TURN).
+* [`RFC8445`](https://datatracker.ietf.org/doc/html/rfc8445). Interactive Connectivity Establishment (ICE).
+* [`RFC8489`](https://datatracker.ietf.org/doc/html/rfc8489). Session Traversal Utilities for NAT (STUN).
+* [`RFC8656`](https://datatracker.ietf.org/doc/html/rfc8656). Traversal Using Relays around NAT (TURN).
 
 # Contributing
 
