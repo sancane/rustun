@@ -1,7 +1,8 @@
 //! The Nonce Cookie used for Long-Term Credential Mechanism
 
 use crate::{attributes::stun::Nonce, StunError, StunErrorType};
-use base64::engine::DEFAULT_ENGINE;
+use base64::prelude::BASE64_STANDARD;
+use base64::Engine;
 use byteorder::{BigEndian, ByteOrder};
 use enumflags2::{bitflags, BitFlags};
 
@@ -33,7 +34,7 @@ impl Nonce {
             None => 0,
         };
 
-        let base64 = base64::encode(&features.to_be_bytes()[..3]);
+        let base64 = BASE64_STANDARD.encode(&features.to_be_bytes()[..3]);
         let value = format!("{}{}{}", NONCE_COOKIE_HEADER, base64, value.as_ref());
         Nonce::new(value)
     }
@@ -52,8 +53,9 @@ impl Nonce {
 
         let flags = &self.as_str()[NONCE_COOKIE_HEADER.len()..NONCE_COOKIE_HEADER.len() + 4];
         let mut bytes = [0x00; 4];
-        let size =
-            base64::decode_engine_slice(flags, &mut bytes, &DEFAULT_ENGINE).map_err(|_e| {
+        let size = BASE64_STANDARD
+            .decode_slice(flags, &mut bytes)
+            .map_err(|_e| {
                 StunError::new(
                     StunErrorType::InvalidParam,
                     "Error decoding base64 security features",

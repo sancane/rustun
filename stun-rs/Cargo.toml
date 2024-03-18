@@ -16,7 +16,7 @@ edition = "2018"
 stun-vectors = { path = "../stun-vectors" }
 
 [dependencies]
-base64 = "0.20.0"
+base64 = "0.22.0"
 bounded-integer = { version = "0.5.2", features = ["types"] }
 byteorder = "1"
 crc = "3.0.0"
