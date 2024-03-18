@@ -40,3 +40,6 @@ ice = []
 turn = []
 mobility = []
 discovery = []
+
+[package.metadata.docs.rs]
+all-features = true
