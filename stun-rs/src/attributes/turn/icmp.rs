@@ -243,6 +243,9 @@ mod tests {
         assert!(attr.as_icmp().is_ok());
         assert!(attr.as_unknown().is_err());
 
+        assert!(!attr.attribute_type().is_comprehension_required());
+        assert!(attr.attribute_type().is_comprehension_optional());
+
         let dbg_fmt = format!("{:?}", attr);
         assert_eq!("Icmp(Icmp { icmp_type: Bounded(127), icmp_code: Bounded(511), error_data: [1, 2, 3, 4] })", dbg_fmt);
     }

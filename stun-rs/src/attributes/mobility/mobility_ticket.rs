@@ -197,5 +197,11 @@ mod tests {
 
         assert!(!attr.attribute_type().is_comprehension_required());
         assert!(attr.attribute_type().is_comprehension_optional());
+
+        let dbg_fmt = format!("{:?}", attr);
+        assert_eq!(
+            "MobilityTicket(MobilityTicket([1, 1, 1, 1, 1, 1, 1, 1, 1, 1]))",
+            dbg_fmt
+        );
     }
 }

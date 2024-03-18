@@ -31,6 +31,9 @@ mod tests {
         assert!(attr.as_life_time().is_ok());
         assert!(attr.as_unknown().is_err());
 
+        assert!(attr.attribute_type().is_comprehension_required());
+        assert!(!attr.attribute_type().is_comprehension_optional());
+
         let dbg_fmt = format!("{:?}", attr);
         assert_eq!("LifeTime(LifeTime(1234))", dbg_fmt);
     }

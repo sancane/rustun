@@ -209,6 +209,9 @@ mod tests {
         assert!(attr.as_address_error_code().is_ok());
         assert!(attr.as_error_code().is_err());
 
+        assert!(!attr.attribute_type().is_comprehension_required());
+        assert!(attr.attribute_type().is_comprehension_optional());
+
         let dbg_fmt = format!("{:?}", attr);
         assert_eq!("AddressErrorCode(AddressErrorCode { family: IPv4, error_code: ErrorCode { error_code: 533, reason: \"test\" } })", dbg_fmt);
     }

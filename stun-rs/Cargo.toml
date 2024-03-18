@@ -1,6 +1,6 @@
 [package]
 name = "stun-rs"
-version = "0.1.7"
+version = "0.1.8"
 authors = ["Santiago Carot-Nemesio <sancane@gmail.com"]
 description = """Rust framework to manage STUN messages"""
 documentation = "https://docs.rs/stun-rs"
@@ -16,7 +16,7 @@ edition = "2018"
 stun-vectors = { path = "../stun-vectors" }
 
 [dependencies]
-base64 = "0.20.0"
+base64 = "0.22.0"
 bounded-integer = { version = "0.5.2", features = ["types"] }
 byteorder = "1"
 crc = "3.0.0"
@@ -40,3 +40,6 @@ ice = []
 turn = []
 mobility = []
 discovery = []
+
+[package.metadata.docs.rs]
+all-features = true

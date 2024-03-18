@@ -335,6 +335,9 @@ mod tests {
         assert!(attr.as_user_name().is_ok());
         assert!(attr.as_unknown().is_err());
 
+        assert!(attr.attribute_type().is_comprehension_required());
+        assert!(!attr.attribute_type().is_comprehension_optional());
+
         let dbg_fmt = format!("{:?}", attr);
         assert_eq!("UserName(UserName(\"test\"))", dbg_fmt);
     }

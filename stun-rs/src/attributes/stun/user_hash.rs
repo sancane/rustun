@@ -258,6 +258,9 @@ mod tests {
         assert!(attr.as_user_hash().is_ok());
         assert!(attr.as_unknown().is_err());
 
+        assert!(attr.attribute_type().is_comprehension_required());
+        assert!(!attr.attribute_type().is_comprehension_optional());
+
         let dbg_fmt = format!("{:?}", attr);
         assert_eq!("UserHash(UserHash([103, 131, 163, 30, 171, 246, 140, 204, 6, 96, 249, 53, 192, 130, 98, 130, 189, 210, 36, 31, 58, 128, 169, 242, 209, 13, 89, 174, 169, 235, 181, 216]))", dbg_fmt);
     }

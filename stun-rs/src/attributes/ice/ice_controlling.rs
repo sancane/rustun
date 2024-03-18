@@ -29,6 +29,9 @@ mod tests {
         assert!(attr.as_ice_controlling().is_ok());
         assert!(attr.as_error_code().is_err());
 
+        assert!(!attr.attribute_type().is_comprehension_required());
+        assert!(attr.attribute_type().is_comprehension_optional());
+
         let dbg_fmt = format!("{:?}", attr);
         assert_eq!("IceControlling(IceControlling(1234))", dbg_fmt);
     }
