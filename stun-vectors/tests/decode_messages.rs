@@ -1,6 +1,7 @@
 use std::convert::TryFrom;
 
 use stun_rs::attributes::ice::{IceControlled, Priority, UseCandidate};
+use stun_rs::attributes::stun::nonce_cookie::StunSecurityFeatures;
 use stun_rs::attributes::stun::{
     Fingerprint, MessageIntegrity, MessageIntegritySha256, Nonce, Realm, Software, UserHash,
     UserName, XorMappedAddress,
@@ -225,6 +226,12 @@ fn test_sample_request_with_long_term_auth_sha256() {
     let nonce = attr.expect_nonce();
     assert_eq!(nonce.attribute_type(), Nonce::get_type());
     assert_eq!(nonce, "obMatJos2AAACf//499k954d6OL34oL9FSTvy64sA");
+    assert!(nonce.is_nonce_cookie());
+    let flags = nonce
+        .security_features()
+        .expect("Can not get feature flags");
+    assert!(!flags.contains(StunSecurityFeatures::PasswordAlgorithms));
+    assert!(!flags.contains(StunSecurityFeatures::UserNameAnonymity));
 
     let attr = iter.next().expect("Expected attribute Realm");
     let realm = attr.expect_realm();

@@ -2,6 +2,7 @@ use std::convert::TryFrom;
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::str::FromStr;
 use stun_rs::attributes::ice::{IceControlled, Priority, UseCandidate};
+use stun_rs::attributes::stun::nonce_cookie::StunSecurityFeatures;
 use stun_rs::attributes::stun::{
     Fingerprint, MessageIntegrity, MessageIntegritySha256, Nonce, Realm, Software, UserHash,
     UserName, XorMappedAddress,
@@ -197,6 +198,13 @@ fn test_sample_request_with_long_term_sha256() {
     let user_hash = UserHash::new(&username, &realm).expect("Can not create UserHash");
     let nonce = Nonce::try_from("obMatJos2AAACf//499k954d6OL34oL9FSTvy64sA")
         .expect("Expected QuotedString");
+    assert!(nonce.is_nonce_cookie());
+    let flags = nonce
+        .security_features()
+        .expect("Can not get feature flags");
+    assert!(!flags.contains(StunSecurityFeatures::PasswordAlgorithms));
+    assert!(!flags.contains(StunSecurityFeatures::UserNameAnonymity));
+
     // Unicode codepoint {00AD} is disallowed in PRECIS, so we use the
     // result of applying SASLprep
     // let password = "The\u{00AD}M\u{00AA}tr\u{2168}";
