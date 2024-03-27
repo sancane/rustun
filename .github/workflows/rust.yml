@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Build with experiments
       run: cargo build --package stun-rs --features experiments --verbose
     - name: Build with turn
@@ -28,10 +28,10 @@ jobs:
       run: cargo build --package stun-rs --features discovery --verbose
     - name: Build with all features
       run: cargo build --verbose --all-features
-    - run: rustup component add clippy
-    - uses: actions-rs/clippy-check@v1
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Add clippy
+      run: rustup component add clippy
+    - name: Run clippy
+      run: cargo clippy --all-targets --all-features
     - name: Run tests
       run: cargo test --verbose --all-features
 
@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v4
     - name: Install cargo-sort
       run: cargo install --locked cargo-sort
     - run: cargo sort -w -c
@@ -54,7 +54,7 @@ jobs:
       with:
         tool: cargo-spellcheck
 
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Run cargo spellcheck
       run: cargo-spellcheck --code 1 --cfg=.github/workflows/spellchecker.cfg
