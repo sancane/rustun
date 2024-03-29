@@ -19,6 +19,12 @@ pub struct EncodableFingerprint {}
 #[derive(Debug, PartialEq, Eq)]
 pub struct DecodableFingerprint(u32);
 
+impl PartialEq<u32> for DecodableFingerprint {
+    fn eq(&self, other: &u32) -> bool {
+        self.0 == *other
+    }
+}
+
 impl DecodableFingerprint {
     fn validate(&self, input: &[u8]) -> bool {
         let crc32 = crc::Crc::<u32>::new(&crc::CRC_32_ISO_HDLC).checksum(input);

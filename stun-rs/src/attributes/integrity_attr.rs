@@ -13,8 +13,20 @@ macro_rules! message_integrity_attribute {
             #[derive(Debug, PartialEq, Eq)]
             pub struct [<Encodable $attr_class>](crate::types::HMACKey);
 
+            impl AsRef<crate::types::HMACKey> for [<Encodable $attr_class>] {
+                fn as_ref(&self) -> &crate::types::HMACKey {
+                    &self.0
+                }
+            }
+
             #[derive(Debug, PartialEq, Eq)]
             pub struct [<Decodable $attr_class>]([u8; $attr_size]);
+
+            impl AsRef<[u8]> for [<Decodable $attr_class>] {
+                fn as_ref(&self) -> &[u8] {
+                    &self.0[..]
+                }
+            }
 
             impl [<Decodable $attr_class>] {
                 fn validate(&self, input: &[u8], key: &crate::types::HMACKey) -> bool {
