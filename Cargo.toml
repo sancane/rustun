@@ -1,6 +1,7 @@
 [workspace]
 
-members = [
+members = [ "stun-agent",
     "stun-rs",
     "stun-vectors",
+    "stun-agent",
 ]
