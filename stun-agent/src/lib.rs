@@ -1,5 +1,6 @@
 mod message;
 mod short_term_auth;
+mod fingerprint;
 
 pub fn add(left: usize, right: usize) -> usize {
     left + right
