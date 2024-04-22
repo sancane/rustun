@@ -1,6 +1,5 @@
 use stun_rs::{
-    MessageClass, MessageMethod, StunAttribute, StunAttributeType, StunMessage, StunMessageBuilder,
-    TransactionId,
+    MessageClass, MessageMethod, StunAttribute, StunMessage, StunMessageBuilder, TransactionId,
 };
 
 #[derive(Debug, Default)]
@@ -24,31 +23,29 @@ impl StunAttributes {
             self.integrite_sha256 = Some(attr);
         } else if attr.is_fingerprint() {
             self.fingerprint = Some(attr);
+        } else if let Some(index) = self
+            .attributes
+            .iter()
+            .position(|a| a.attribute_type() == attr.attribute_type())
+        {
+            // If this kind of attribute is already present, replace it
+            self.attributes[index] = attr;
         } else {
-            if let Some(index) = self
-                .attributes
-                .iter()
-                .position(|a| a.attribute_type() == attr.attribute_type())
-            {
-                // If this kind of attribute is already present, replace it
-                self.attributes[index] = attr;
-            } else {
-                self.attributes.push(attr);
-            }
+            self.attributes.push(attr);
         }
     }
 }
 
-impl Into<Vec<StunAttribute>> for StunAttributes {
-    fn into(self) -> Vec<StunAttribute> {
-        let mut attributes = self.attributes;
-        if let Some(attr) = self.integrity {
+impl From<StunAttributes> for Vec<StunAttribute> {
+    fn from(val: StunAttributes) -> Self {
+        let mut attributes = val.attributes;
+        if let Some(attr) = val.integrity {
             attributes.push(attr);
         }
-        if let Some(attr) = self.integrite_sha256 {
+        if let Some(attr) = val.integrite_sha256 {
             attributes.push(attr);
         }
-        if let Some(attr) = self.fingerprint {
+        if let Some(attr) = val.fingerprint {
             attributes.push(attr);
         }
         attributes
@@ -101,7 +98,7 @@ mod tests {
         let message = create_stun_message(
             BINDING,
             MessageClass::Request,
-            Some(transaction_id.clone()),
+            Some(transaction_id),
             attributes,
         );
 

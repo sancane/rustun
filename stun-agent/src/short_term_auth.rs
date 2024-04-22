@@ -1,20 +1,39 @@
 use crate::message::StunAttributes;
+use crate::StunAgentError;
 use std::collections::HashSet;
 use stun_rs::attributes::stun::{MessageIntegrity, MessageIntegritySha256, UserName};
-use stun_rs::{
-    get_input_text, HMACKey, MessageClass,
-    MessageDecoderBuilder, StunAttribute, StunAttributeType, StunError, StunMessage, TransactionId,
-};
+use stun_rs::error::{StunDecodeError, StunEncodeError};
+use stun_rs::{get_input_text, HMACKey, MessageClass, StunAttribute, StunMessage, TransactionId};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum AuthValidation {
+pub enum AuthValidationError {
     Discarded,
-    Ignored,
     ProtectionViolated,
 }
 
+impl From<AuthValidationError> for StunAgentError {
+    fn from(err: AuthValidationError) -> StunAgentError {
+        match err {
+            AuthValidationError::Discarded => StunAgentError::Discarded,
+            AuthValidationError::ProtectionViolated => StunAgentError::ProtectionViolated,
+        }
+    }
+}
+
+impl From<StunEncodeError> for StunAgentError {
+    fn from(err: StunEncodeError) -> StunAgentError {
+        StunAgentError::EncodeError(err)
+    }
+}
+
+impl From<StunDecodeError> for StunAgentError {
+    fn from(err: StunDecodeError) -> StunAgentError {
+        StunAgentError::DecodeError(err)
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum Integrity {
+pub enum Integrity {
     MessageIntegrity,
     MessageIntegritySha256,
 }
@@ -106,7 +125,7 @@ impl ShortTermAuthServer {
     }
 }
 */
-struct ShortTermAuthClient {
+pub struct ShortTermAuthClient {
     user_name: UserName,
     key: HMACKey,
     integrity: Option<Integrity>,
@@ -115,31 +134,27 @@ struct ShortTermAuthClient {
 }
 
 impl ShortTermAuthClient {
-    pub fn new<U, P>(
-        user_name: U,
-        password: P,
+    pub fn new(
+        user_name: UserName,
+        key: HMACKey,
         integrity: Option<Integrity>,
         is_reliable: bool,
-    ) -> Result<ShortTermAuthClient, StunError>
-    where
-        U: AsRef<str>,
-        P: AsRef<str>,
-    {
-        Ok(Self {
-            user_name: UserName::new(user_name.as_ref())?,
-            key: HMACKey::new_short_term(password.as_ref())?,
+    ) -> ShortTermAuthClient {
+        Self {
+            user_name,
+            key,
             integrity,
             is_reliable,
             discarded: HashSet::new(),
-        })
+        }
     }
 
-    fn discard_message(&mut self, message: &StunMessage) -> AuthValidation {
+    fn discard_message(&mut self, message: &StunMessage) -> AuthValidationError {
         if self.is_reliable {
             // If the request was sent over a reliable transport, the response MUST
             // be discarded, and the layer MUST immediately end the transaction and
             // signal that the integrity protection was violated.
-            AuthValidation::ProtectionViolated
+            AuthValidationError::ProtectionViolated
         } else {
             // If the request was sent over an unreliable transport, the response
             // MUST be discarded, as if it had never been received.  This means that
@@ -148,7 +163,7 @@ impl ShortTermAuthClient {
             // ending the transaction, the layer MUST signal that the integrity
             // protection was violated.
             self.discarded.insert(*message.transaction_id());
-            AuthValidation::Discarded
+            AuthValidationError::Discarded
         }
     }
 
@@ -157,7 +172,7 @@ impl ShortTermAuthClient {
         integrity: Option<&StunAttribute>,
         raw_buffer: &[u8],
         message: &StunMessage,
-    ) -> Result<(), AuthValidation> {
+    ) -> Result<(), AuthValidationError> {
         if let Some(integrity) = integrity {
             // Check that the message can be authenticated
             if validate_message_integrity(integrity, &self.key, raw_buffer) {
@@ -177,7 +192,7 @@ impl ShortTermAuthClient {
         &mut self,
         raw_buffer: &[u8],
         msg: &StunMessage,
-    ) -> Result<(), AuthValidation> {
+    ) -> Result<(), AuthValidationError> {
         let mut integrity = None;
         let mut integrity_sha256 = None;
 
@@ -192,7 +207,7 @@ impl ShortTermAuthClient {
                 // Only one integrity attribute must be set
                 // TODO: Add logging
                 println!("Both integrity attributes are set");
-                return Err(AuthValidation::Discarded);
+                return Err(AuthValidationError::Discarded);
             }
         }
 
@@ -220,7 +235,11 @@ impl ShortTermAuthClient {
         }
     }
 
-    fn recv_message(&mut self, raw_buffer: &[u8], msg: &StunMessage) -> Result<(), AuthValidation> {
+    pub fn recv_message(
+        &mut self,
+        raw_buffer: &[u8],
+        msg: &StunMessage,
+    ) -> Result<(), AuthValidationError> {
         match msg.class() {
             MessageClass::Request | MessageClass::Indication => Ok(()),
             MessageClass::SuccessResponse | MessageClass::ErrorResponse => {
@@ -261,15 +280,14 @@ impl ShortTermAuthClient {
         }
     }
 
-    pub fn send_request(&self, attributes: &mut StunAttributes) {
+    pub fn add_attributes(&self, attributes: &mut StunAttributes) {
         self.prepare_request_or_indication(attributes);
     }
 
-    pub fn send_indication(&self, attributes: &mut StunAttributes) {
-        self.prepare_request_or_indication(attributes);
-    }
-
-    fn signal_protection_violated_on_timeout(&mut self, transaction_id: &TransactionId) -> bool {
+    pub fn signal_protection_violated_on_timeout(
+        &mut self,
+        transaction_id: &TransactionId,
+    ) -> bool {
         self.discarded.remove(transaction_id)
     }
 }
@@ -295,7 +313,10 @@ mod short_term_auth_tests {
     use super::*;
     use stun_rs::attributes::stun::Software;
     use stun_rs::methods::BINDING;
-    use stun_rs::{MessageEncoderBuilder, StunMessageBuilder};
+    use stun_rs::{
+        MessageDecoderBuilder, MessageEncoderBuilder, StunAttributeType, StunError,
+        StunMessageBuilder,
+    };
 
     const USERNAME: &str = "test-username";
     const PASSWORD: &str = "test-password";
@@ -336,10 +357,10 @@ mod short_term_auth_tests {
 
         let key = HMACKey::new_short_term(PASSWORD).expect("Could not create HMACKey");
         let mut buffer: [u8; 150] = [0x00; 150];
-        let size = create_response_message(&mut buffer, integrity);
+        let _ = create_response_message(&mut buffer, integrity);
 
         let decoder = MessageDecoderBuilder::default().build();
-        let (msg, size) = decoder.decode(&buffer).expect("Failed to decode message");
+        let (msg, _) = decoder.decode(&buffer).expect("Failed to decode message");
 
         // Check that software is not an integrity attribute
         let attr = msg
@@ -397,56 +418,41 @@ mod short_term_auth_tests {
         }
     }
 
-    #[test]
-    fn test_send_request() {
-        let integrity = None;
-        let client = ShortTermAuthClient::new(USERNAME, PASSWORD, integrity, false)
-            .expect("Failed to create ShortTermAuthClient");
-        let mut attributes = StunAttributes::default();
-        client.send_request(&mut attributes);
-        let attrs: Vec<StunAttribute> = attributes.into();
-        check_attributes(integrity, &attrs);
-
-        let integrity = Some(Integrity::MessageIntegrity);
-        let client = ShortTermAuthClient::new(USERNAME, PASSWORD, integrity, false)
-            .expect("Failed to create ShortTermAuthClient");
-        let mut attributes = StunAttributes::default();
-        client.send_request(&mut attributes);
-        let attrs: Vec<StunAttribute> = attributes.into();
-        check_attributes(integrity, &attrs);
-
-        let integrity = Some(Integrity::MessageIntegritySha256);
-        let client = ShortTermAuthClient::new(USERNAME, PASSWORD, integrity, false)
-            .expect("Failed to create ShortTermAuthClient");
-        let mut attributes = StunAttributes::default();
-        client.send_request(&mut attributes);
-        let attrs: Vec<StunAttribute> = attributes.into();
-        check_attributes(integrity, &attrs);
+    fn new_short_term_auth_client(
+        integrity: Option<Integrity>,
+        is_reliable: bool,
+    ) -> Result<ShortTermAuthClient, StunError> {
+        Ok(ShortTermAuthClient::new(
+            UserName::new(USERNAME)?,
+            HMACKey::new_short_term(PASSWORD)?,
+            integrity,
+            is_reliable,
+        ))
     }
 
     #[test]
-    fn test_send_indication() {
+    fn test_send_request() {
         let integrity = None;
-        let client = ShortTermAuthClient::new(USERNAME, PASSWORD, integrity, false)
+        let client = new_short_term_auth_client(integrity, false)
             .expect("Failed to create ShortTermAuthClient");
         let mut attributes = StunAttributes::default();
-        client.send_indication(&mut attributes);
+        client.add_attributes(&mut attributes);
         let attrs: Vec<StunAttribute> = attributes.into();
         check_attributes(integrity, &attrs);
 
         let integrity = Some(Integrity::MessageIntegrity);
-        let client = ShortTermAuthClient::new(USERNAME, PASSWORD, integrity, false)
+        let client = new_short_term_auth_client(integrity, false)
             .expect("Failed to create ShortTermAuthClient");
         let mut attributes = StunAttributes::default();
-        client.send_indication(&mut attributes);
+        client.add_attributes(&mut attributes);
         let attrs: Vec<StunAttribute> = attributes.into();
         check_attributes(integrity, &attrs);
 
         let integrity = Some(Integrity::MessageIntegritySha256);
-        let client = ShortTermAuthClient::new(USERNAME, PASSWORD, integrity, false)
+        let client = new_short_term_auth_client(integrity, false)
             .expect("Failed to create ShortTermAuthClient");
         let mut attributes = StunAttributes::default();
-        client.send_indication(&mut attributes);
+        client.add_attributes(&mut attributes);
         let attrs: Vec<StunAttribute> = attributes.into();
         check_attributes(integrity, &attrs);
     }
@@ -454,13 +460,13 @@ mod short_term_auth_tests {
     #[test]
     fn test_recv_response_message_integrity() {
         let mut buffer: [u8; 150] = [0x00; 150];
-        let size = create_response_message(&mut buffer, Integrity::MessageIntegrity);
+        let _ = create_response_message(&mut buffer, Integrity::MessageIntegrity);
 
         let decoder = MessageDecoderBuilder::default().build();
         let (msg, size) = decoder.decode(&buffer).expect("Failed to decode message");
 
-        let mut client = ShortTermAuthClient::new(USERNAME, PASSWORD, None, false)
-            .expect("Failed to create ShortTermAuthClient");
+        let mut client =
+            new_short_term_auth_client(None, false).expect("Failed to create ShortTermAuthClient");
         client
             .recv_message(&buffer[..=size], &msg)
             .expect("Failed to process response");
@@ -470,17 +476,17 @@ mod short_term_auth_tests {
 
         // Processing the message must make the client pick the MessageIntegrity mechanism
         let mut attributes = StunAttributes::default();
-        client.send_request(&mut attributes);
+        client.add_attributes(&mut attributes);
         let attrs: Vec<StunAttribute> = attributes.into();
         check_attributes(Some(Integrity::MessageIntegrity), &attrs);
 
         // Change the integrity attribute to MessageIntegritySha256 in the next
         // response must make the client drop the message
-        let size = create_response_message(&mut buffer, Integrity::MessageIntegritySha256);
+        let _ = create_response_message(&mut buffer, Integrity::MessageIntegritySha256);
         let decoder = MessageDecoderBuilder::default().build();
         let (msg, size) = decoder.decode(&buffer).expect("Failed to decode message");
         assert_eq!(
-            Err(AuthValidation::Discarded),
+            Err(AuthValidationError::Discarded),
             client.recv_message(&buffer[..=size], &msg)
         );
 
@@ -491,13 +497,13 @@ mod short_term_auth_tests {
     #[test]
     fn test_recv_response_message_integrity_sha256() {
         let mut buffer: [u8; 150] = [0x00; 150];
-        let size = create_response_message(&mut buffer, Integrity::MessageIntegritySha256);
+        let _ = create_response_message(&mut buffer, Integrity::MessageIntegritySha256);
 
         let decoder = MessageDecoderBuilder::default().build();
         let (msg, size) = decoder.decode(&buffer).expect("Failed to decode message");
 
-        let mut client = ShortTermAuthClient::new(USERNAME, PASSWORD, None, false)
-            .expect("Failed to create ShortTermAuthClient");
+        let mut client =
+            new_short_term_auth_client(None, false).expect("Failed to create ShortTermAuthClient");
         client
             .recv_message(&buffer[..=size], &msg)
             .expect("Failed to process response");
@@ -507,17 +513,17 @@ mod short_term_auth_tests {
 
         // Processing the message must make the client pick the MessageIntegritySha256 mechanism
         let mut attributes = StunAttributes::default();
-        client.send_request(&mut attributes);
+        client.add_attributes(&mut attributes);
         let attrs: Vec<StunAttribute> = attributes.into();
         check_attributes(Some(Integrity::MessageIntegritySha256), &attrs);
 
         // Change the integrity attribute to MessageIntegrity in the next
         // response must make the client drop the message
-        let size = create_response_message(&mut buffer, Integrity::MessageIntegrity);
+        let _ = create_response_message(&mut buffer, Integrity::MessageIntegrity);
         let decoder = MessageDecoderBuilder::default().build();
         let (msg, size) = decoder.decode(&buffer).expect("Failed to decode message");
         assert_eq!(
-            Err(AuthValidation::Discarded),
+            Err(AuthValidationError::Discarded),
             client.recv_message(&buffer[..=size], &msg)
         );
 
@@ -548,10 +554,10 @@ mod short_term_auth_tests {
             .expect("Failed to encode message");
 
         // Responses can not have integrity and integrity_sha256 attributes at the same time
-        let mut client = ShortTermAuthClient::new(USERNAME, PASSWORD, None, false)
-            .expect("Failed to create ShortTermAuthClient");
+        let mut client =
+            new_short_term_auth_client(None, false).expect("Failed to create ShortTermAuthClient");
         assert_eq!(
-            Err(AuthValidation::Discarded),
+            Err(AuthValidationError::Discarded),
             client.recv_message(&buffer[..=size], &msg)
         );
 
@@ -577,10 +583,10 @@ mod short_term_auth_tests {
             .expect("Failed to encode message");
 
         // Responses have neither integrity nor integrity_sha256 attributes
-        let mut client = ShortTermAuthClient::new(USERNAME, PASSWORD, None, false)
-            .expect("Failed to create ShortTermAuthClient");
+        let mut client =
+            new_short_term_auth_client(None, false).expect("Failed to create ShortTermAuthClient");
         assert_eq!(
-            Err(AuthValidation::Discarded),
+            Err(AuthValidationError::Discarded),
             client.recv_message(&buffer[..=size], &msg)
         );
 
@@ -606,10 +612,10 @@ mod short_term_auth_tests {
             .expect("Failed to encode message");
 
         // Responses have neither integrity nor integrity_sha256 attributes
-        let mut client = ShortTermAuthClient::new(USERNAME, PASSWORD, None, true)
-            .expect("Failed to create ShortTermAuthClient");
+        let mut client =
+            new_short_term_auth_client(None, true).expect("Failed to create ShortTermAuthClient");
         assert_eq!(
-            Err(AuthValidation::ProtectionViolated),
+            Err(AuthValidationError::ProtectionViolated),
             client.recv_message(&buffer[..=size], &msg)
         );
 
