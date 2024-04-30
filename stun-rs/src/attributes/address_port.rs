@@ -97,7 +97,7 @@ macro_rules! address_port_attribute {
         $attr_type:ident
     ) => (
         $(#[$meta])*
-        #[derive(Debug, PartialEq, Eq)]
+        #[derive(Debug, Clone, PartialEq, Eq)]
         pub struct $class_name(std::net::SocketAddr);
 
         impl $class_name {

@@ -359,7 +359,7 @@ const MAX_REASON_PHRASE_DECODED_SIZE: usize = 763;
 /// assert_eq!(attr.reason(), "Unknown Attribute");
 /// #  Ok(())
 /// # }
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ErrorCode {
     error_code: u16,
     reason: String,

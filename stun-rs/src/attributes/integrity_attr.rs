@@ -10,10 +10,10 @@ macro_rules! message_integrity_attribute {
         $attr_size:ident
     ) => (
         paste::paste! {
-            #[derive(Debug, PartialEq, Eq)]
+            #[derive(Debug, Clone, PartialEq, Eq)]
             pub struct [<Encodable $attr_class>](crate::types::HMACKey);
 
-            #[derive(Debug, PartialEq, Eq)]
+            #[derive(Debug, Clone, PartialEq, Eq)]
             pub struct [<Decodable $attr_class>]([u8; $attr_size]);
 
             impl [<Decodable $attr_class>] {
@@ -32,7 +32,7 @@ macro_rules! message_integrity_attribute {
             }
 
             $(#[$meta])*
-            #[derive(Debug, PartialEq, Eq)]
+            #[derive(Debug, Clone, PartialEq, Eq)]
             pub enum $attr_class {
                 /// Encodable version of this attribute. This is used when the attribute is added to a STUN message that is going to be sent to the network.
                 Encodable([<Encodable $attr_class>]),

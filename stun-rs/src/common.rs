@@ -249,7 +249,7 @@ macro_rules! xor_socket_addr_attribute {
         $attr_type:ident,
     ) => (
         $(#[$meta])*
-        #[derive(Debug, PartialEq, Eq)]
+        #[derive(Debug, Clone, PartialEq, Eq)]
         pub struct $class_name(std::net::SocketAddr);
 
         impl $class_name {

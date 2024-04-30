@@ -20,7 +20,7 @@ const RESERVATION_TOKEN_SIZE: usize = 8;
 /// let attr = ReservationToken::from(token);
 /// assert_eq!(token, attr.token());
 ///```
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReservationToken([u8; RESERVATION_TOKEN_SIZE]);
 
 impl ReservationToken {

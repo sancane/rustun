@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 /// [STUN Password Algorithms](https://datatracker.ietf.org/doc/html/rfc8489#section-18.5)
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub enum AlgorithmId {
@@ -45,10 +47,10 @@ impl From<AlgorithmId> for u16 {
 }
 
 /// An algorithm is the combination of the [`AlgorithmId`] and its parameters.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Algorithm {
     algorithm: AlgorithmId,
-    params: Option<Vec<u8>>,
+    params: Option<Rc<Vec<u8>>>,
 }
 impl AsRef<Algorithm> for Algorithm {
     fn as_ref(&self) -> &Algorithm {
@@ -67,7 +69,7 @@ impl Algorithm {
     {
         Self {
             algorithm,
-            params: parameters.into().map(Vec::from),
+            params: parameters.into().map(Vec::from).map(Rc::new),
         }
     }
 
@@ -78,10 +80,7 @@ impl Algorithm {
 
     /// Returns the parameters required by the algorithm.
     pub fn parameters(&self) -> Option<&[u8]> {
-        match self.params.as_ref() {
-            Some(buf) => Some(buf.as_slice()),
-            None => None,
-        }
+        self.params.as_ref().map(|v| v.as_ref().as_slice())
     }
 }
 

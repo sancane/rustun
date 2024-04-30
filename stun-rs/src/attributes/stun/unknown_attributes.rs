@@ -5,6 +5,7 @@ use crate::error::{StunError, StunErrorType};
 use byteorder::{BigEndian, ByteOrder};
 use std::convert::From;
 use std::ops::Deref;
+use std::rc::Rc;
 
 const UNKNOWN_ATTRIBUTES: u16 = 0x000A;
 
@@ -31,9 +32,9 @@ const UNKNOWN_ATTRIBUTES: u16 = 0x000A;
 /// attr.add(2134);
 /// assert_eq!(attr.iter().count(), 1);
 ///```
-#[derive(Debug, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct UnknownAttributes {
-    attrs: Vec<u16>,
+    attrs: Rc<Vec<u16>>,
 }
 
 impl UnknownAttributes {
@@ -42,13 +43,13 @@ impl UnknownAttributes {
     /// - 'value' - Attribute type
     pub fn add(&mut self, value: u16) {
         if !self.attrs.contains(&value) {
-            self.attrs.push(value);
+            Rc::make_mut(&mut self.attrs).push(value);
         }
     }
 
     /// Return the array of unknown attributes
     pub fn attributes(&self) -> &[u16] {
-        &self.attrs
+        self.attrs.as_slice()
     }
 
     /// Returns an iterator over the unknown attributes.

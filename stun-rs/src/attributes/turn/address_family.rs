@@ -15,7 +15,7 @@ macro_rules! family_address_attribute {
             const FAMILY_ADDRESS_ATTRIBUTE_SIZE: usize = 4;
 
             $(#[$meta])*
-            #[derive(Debug, PartialEq, Eq)]
+            #[derive(Debug, Clone, PartialEq, Eq)]
             pub struct $class_name(crate::AddressFamily);
 
         impl $class_name {

@@ -3,6 +3,7 @@ use crate::attributes::{stunt_attribute, DecodeAttributeValue, EncodeAttributeVa
 use crate::common::{check_buffer_boundaries, fill_padding_value, padding};
 use crate::context::{AttributeDecoderContext, AttributeEncoderContext};
 use crate::StunError;
+use std::rc::Rc;
 
 //  0                   1                   2                   3
 //  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -35,15 +36,15 @@ const PASSWORD_ALGORITHMS: u16 = 0x8002;
 /// attr.add(PasswordAlgorithm::new(Algorithm::from(AlgorithmId::MD5)));
 /// assert_eq!(attr.iter().count(), 1);
 ///```
-#[derive(Debug, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct PasswordAlgorithms {
-    algorithms: Vec<PasswordAlgorithm>,
+    algorithms: Rc<Vec<PasswordAlgorithm>>,
 }
 
 impl PasswordAlgorithms {
     /// Adds a new password algorithm.
     pub fn add(&mut self, algorithm: PasswordAlgorithm) {
-        self.algorithms.push(algorithm);
+        Rc::get_mut(&mut self.algorithms).unwrap().push(algorithm);
     }
 
     /// Return the array of password attributes
@@ -59,16 +60,18 @@ impl PasswordAlgorithms {
 
 impl IntoIterator for PasswordAlgorithms {
     type Item = PasswordAlgorithm;
-    type IntoIter = std::vec::IntoIter<Self::Item>;
+    type IntoIter = std::vec::IntoIter<PasswordAlgorithm>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.algorithms.into_iter()
+        self.algorithms.clone().as_ref().clone().into_iter()
     }
 }
 
 impl From<Vec<PasswordAlgorithm>> for PasswordAlgorithms {
     fn from(v: Vec<PasswordAlgorithm>) -> Self {
-        Self { algorithms: v }
+        Self {
+            algorithms: Rc::new(v),
+        }
     }
 }
 
