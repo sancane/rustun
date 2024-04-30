@@ -28,9 +28,7 @@ impl PartialOrd for TimeoutItem {
 
 impl PartialEq for TimeoutItem {
     fn eq(&self, other: &Self) -> bool {
-        let expires = self.instant + self.timeout;
-        let other_expires = other.instant + other.timeout;
-        expires == other_expires
+        self.instant == other.instant && self.timeout == other.timeout
     }
 }
 
@@ -79,19 +77,19 @@ impl StunMessageTimeout {
     }
 }
 
-pub const DEFAULT_RTO: u16 = 500;
-pub const DEFAULT_RC: u16 = 7;
-pub const DEFAULT_RM: u16 = 16;
+pub const DEFAULT_RTO: Duration = Duration::from_millis(500);
+pub const DEFAULT_RC: u32 = 7;
+pub const DEFAULT_RM: u32 = 16;
 
 #[derive(Debug)]
-pub struct TimeoutCalculator {
-    rtt: u16,
-    rm: u16,
-    rc: u16,
-    last_rm: u16,
+pub struct RtoCalculator {
+    rtt: Duration,
+    rm: u32,
+    rc: u32,
+    last_rm: u32,
 }
 
-impl Default for TimeoutCalculator {
+impl Default for RtoCalculator {
     fn default() -> Self {
         Self {
             rtt: DEFAULT_RTO,
@@ -102,13 +100,20 @@ impl Default for TimeoutCalculator {
     }
 }
 
-impl TimeoutCalculator {
-    pub fn new(rtt: u16, rm: u16, rc: u16) -> Self {
+impl RtoCalculator {
+    // Creates a new retransmission timeout calculator
+    // # Arguments
+    // * `rtt` - The initial retransmission timeout value
+    // * `last_rm` - The last retransmission multiplier
+    // * `rc` - The retransmission counter
+    // # Returns
+    // A new `RtoCalculator` instance
+    pub fn new(rtt: Duration, last_rm: u32, rc: u32) -> Self {
         Self {
             rtt,
             rm: 1,
             rc,
-            last_rm: rm,
+            last_rm,
         }
     }
 
@@ -117,32 +122,44 @@ impl TimeoutCalculator {
             return None;
         }
 
-        let ms = if self.rc == 1 {
+        let rto = if self.rc == 1 {
+            // If, after the last request, a duration equal to Rm times the RTO
+            // has passed without a response, the client SHOULD consider
+            // the transaction to have failed. Next call to this function will
+            // return None
             self.rtt * self.last_rm
         } else {
+            // Apply the retransmission multiplier
             self.rtt * self.rm
         };
 
         self.rm *= 2;
         self.rc -= 1;
 
-        Some(Duration::from_millis(ms as u64))
+        Some(rto)
     }
 }
 
 #[derive(Debug, Default)]
-pub struct TimeoutManager {
+pub struct RtoManager {
     latest: Option<Instant>,
     last_rto: Duration,
-    calculator: TimeoutCalculator,
+    calculator: RtoCalculator,
 }
 
-impl TimeoutManager {
-    pub fn new(rtt: u16, rm: u16, rc: u16) -> Self {
+impl RtoManager {
+    // Creates a new retransmission timeout manager
+    // # Arguments
+    // * `rto` - The initial retransmission timeout value
+    // * `rm` - The initial retransmission multiplier
+    // * `rc` - The initial retransmission counter
+    // # Returns
+    // A new `RtoManager` instance
+    pub fn new(rtt: Duration, rm: u32, rc: u32) -> Self {
         Self {
             latest: None,
             last_rto: Duration::default(),
-            calculator: TimeoutCalculator::new(rtt, rm, rc),
+            calculator: RtoCalculator::new(rtt, rm, rc),
         }
     }
 
@@ -160,7 +177,8 @@ impl TimeoutManager {
                         return Some(self.last_rto);
                     }
                 }
-                // No more timeouts
+                debug!("No more timeouts");
+                self.latest = None;
                 return None;
             } else {
                 self.last_rto = next_timeout - instant;
@@ -182,8 +200,79 @@ impl TimeoutManager {
 }
 
 #[cfg(test)]
-mod tests_stun_msg_timout {
+mod stun_timout_item {
     use super::*;
+
+    #[test]
+    fn test_timeout_item_ordering() {
+        let i1 = TimeoutItem {
+            instant: Instant::now(),
+            timeout: Duration::from_millis(100),
+            transaction_id: TransactionId::from([1; 12]),
+        };
+
+        let i2 = TimeoutItem {
+            instant: Instant::now(),
+            timeout: Duration::from_millis(200),
+            transaction_id: TransactionId::from([2; 12]),
+        };
+
+        let i3 = TimeoutItem {
+            instant: Instant::now(),
+            timeout: Duration::from_millis(300),
+            transaction_id: TransactionId::from([3; 12]),
+        };
+
+        let i4 = TimeoutItem {
+            instant: i3.instant,
+            timeout: Duration::from_millis(300),
+            transaction_id: TransactionId::from([4; 12]),
+        };
+
+        let i5 = TimeoutItem {
+            instant: i3.instant,
+            timeout: Duration::from_millis(300),
+            transaction_id: TransactionId::from([4; 12]),
+        };
+
+        assert!(i1 < i2);
+        assert!(i2 < i3);
+        assert!(i1 < i3);
+        assert!(i3 > i2);
+        assert!(i2 > i1);
+        assert!(i3 > i1);
+
+        assert!(i4 == i3);
+        assert!(i3 == i4);
+        assert!(i4 == i5);
+        assert!(i3 == i5);
+        assert!(i5 == i5);
+    }
+}
+
+#[cfg(test)]
+mod stun_timouts_tests {
+    use super::*;
+
+    #[test]
+    fn test_next_timeout() {
+        let mut timeout = StunMessageTimeout::default();
+        let id_1 = TransactionId::from([1; 12]);
+
+        let instant = Instant::now();
+        timeout.add(instant, Duration::from_millis(50), id_1);
+
+        let instant = instant + Duration::from_millis(20);
+        let (t, d) = timeout.next_timeout(instant).expect("Expected a timeout");
+        assert_eq!(t, id_1);
+        assert_eq!(d, Duration::from_millis(30));
+
+        // Advance 30 ms to make the first timeout expire
+        let instant = instant + Duration::from_millis(30);
+        let (t, d) = timeout.next_timeout(instant).expect("Expected a timeout");
+        assert_eq!(t, id_1);
+        assert_eq!(d, Duration::from_millis(0));
+    }
 
     #[test]
     fn test_timeout_one() {
@@ -362,12 +451,12 @@ mod tests_stun_msg_timout {
 }
 
 #[cfg(test)]
-mod tests_timout_controller {
+mod timout_controller_tests {
     use super::*;
 
     #[test]
     fn test_timeout_calculator() {
-        let mut calculator = TimeoutCalculator::default();
+        let mut calculator = RtoCalculator::default();
         assert_eq!(calculator.next_rto(), Some(Duration::from_millis(500)));
         assert_eq!(calculator.next_rto(), Some(Duration::from_millis(1000)));
         assert_eq!(calculator.next_rto(), Some(Duration::from_millis(2000)));
@@ -383,12 +472,39 @@ mod tests_timout_controller {
 }
 
 #[cfg(test)]
-mod tests_timout_manager {
+mod timout_manager_tests {
     use super::*;
+
+    fn init_logging() {
+        let _ = env_logger::builder().is_test(true).try_init();
+    }
+
+    #[test]
+    fn test_timeout_manager() {
+        init_logging();
+
+        let mut manager = RtoManager::new(Duration::from_millis(10), 1, 1);
+        let mut instant = Instant::now();
+        let rto = manager.next_rto(instant).expect("Expected a timeout");
+        assert_eq!(rto, Duration::from_millis(10));
+
+        instant += rto;
+        assert!(manager.next_rto(instant).is_none());
+
+        // No more rto must be provided
+        instant += Duration::from_millis(10);
+        assert!(manager.next_rto(instant).is_none());
+
+        // No retransmissions rc=0
+        let mut manager = RtoManager::new(Duration::from_millis(10), 1, 0);
+        assert!(manager.next_rto(Instant::now()).is_none());
+    }
 
     #[test]
     fn test_timeout_manager_on_time() {
-        let mut manager = TimeoutManager::default();
+        init_logging();
+
+        let mut manager = RtoManager::default();
         let mut instant = Instant::now();
         let rto = manager.next_rto(instant).expect("Expected a timeout");
         assert_eq!(rto, Duration::from_millis(500));
@@ -434,7 +550,9 @@ mod tests_timout_manager {
 
     #[test]
     fn test_timeout_manager_adjusted() {
-        let mut manager = TimeoutManager::default();
+        init_logging();
+
+        let mut manager = RtoManager::default();
         let mut instant = Instant::now();
         // [time: 0 ms] First timeout is 500 ms
         let rto = manager.next_rto(instant).expect("Expected a timeout");
@@ -476,7 +594,9 @@ mod tests_timout_manager {
 
     #[test]
     fn test_timeout_delayed_with_timeout() {
-        let mut manager = TimeoutManager::default();
+        init_logging();
+
+        let mut manager = RtoManager::default();
         let mut instant = Instant::now();
         // [time: 0 ms] First timeout is 500 ms
         let rto = manager.next_rto(instant).expect("Expected a timeout");

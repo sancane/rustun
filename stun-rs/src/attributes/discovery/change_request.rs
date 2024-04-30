@@ -42,7 +42,7 @@ pub enum ChangeRequestFlags {
 pub struct ChangeRequest(u32);
 
 impl ChangeRequest {
-    /// cerates a new change request attribute
+    /// creates a new change request attribute
     /// # Arguments
     /// - `change_ip`: The change IP flag
     /// - `change_port`: The change port flag

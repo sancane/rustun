@@ -1,18 +1,30 @@
 use crate::message::StunAttributes;
+use crate::StunAgentError;
 use stun_rs::attributes::stun::Fingerprint;
-use stun_rs::{get_input_text, StunMessage};
+use stun_rs::{get_input_text, StunAttribute, StunMessage};
 
-pub fn validate_fingerprint(raw_buffer: &[u8], msg: &StunMessage) -> bool {
-    let Some(attr) = msg.get::<Fingerprint>() else {
-        return false;
-    };
-    let Ok(fingerprint) = attr.as_fingerprint() else {
-        return false;
-    };
+pub fn validate_fingerprint_attribute(
+    raw_buffer: &[u8],
+    attr: &StunAttribute,
+) -> Result<bool, StunAgentError> {
+    let fingerprint = attr
+        .as_fingerprint()
+        .map_err(|_| StunAgentError::StunCheckFailed)?;
     let Some(input) = get_input_text::<Fingerprint>(raw_buffer) else {
-        return false;
+        return Err(StunAgentError::StunCheckFailed);
     };
-    fingerprint.validate(&input)
+
+    Ok(fingerprint.validate(&input))
+}
+
+pub fn validate_fingerprint(raw_buffer: &[u8], msg: &StunMessage) -> Result<bool, StunAgentError> {
+    // When fingerprint is used, the message must contain the FINGERPRINT attribute
+    // which aids in distinguishing STUN packets from packets of other protocols,
+    // and the value of the FINGERPRINT attribute contains the correct value
+    let fingerprint = msg
+        .get::<Fingerprint>()
+        .ok_or(StunAgentError::StunCheckFailed)?;
+    validate_fingerprint_attribute(raw_buffer, fingerprint)
 }
 
 // When the FINGERPRINT extension is used, an agent includes the
@@ -73,18 +85,43 @@ mod fingerprint_tests {
         let decoder = MessageDecoderBuilder::default().build();
         let (msg, _) = decoder.decode(&buffer).expect("Failed to decode message");
 
-        assert!(validate_fingerprint(&buffer, &msg));
+        assert!(validate_fingerprint(&buffer, &msg).expect("Failed to validate fingerprint"));
 
-        // Change a value will make validation fail (change a value in the transactio id)
-        buffer[15] = 0xff;
-        assert!(!validate_fingerprint(&buffer, &msg));
+        // Change the byte 2 of the message type to make the integrity check fail
+        buffer[1] += 1;
+        assert!(!validate_fingerprint(&buffer, &msg).expect("Failed to validate fingerprint"));
 
         // Create a message without FINGERPRINT
         let _ = create_response_message(&mut buffer, false);
         let decoder = MessageDecoderBuilder::default().build();
         let (msg, _) = decoder.decode(&buffer).expect("Failed to decode message");
-        // We can not validate a message without the FINGERPRINT attribute
-        assert!(!validate_fingerprint(&buffer, &msg));
+        // we get a StunCheckFailed error if we try to get the Fingerprint attribute when it is not used
+        assert!(validate_fingerprint(&buffer, &msg).is_err());
+    }
+
+    #[test]
+    fn test_validate_fingerprint_attribute() {
+        let mut buffer: [u8; 150] = [0x00; 150];
+        let username =
+            UserName::try_from("test-username").expect("Can not create USERNAME attribute");
+        let error =
+            validate_fingerprint_attribute(&buffer, &username.into()).expect_err("Expected error");
+        assert_eq!(error, StunAgentError::StunCheckFailed);
+
+        let fingerprint = Fingerprint::default();
+        let error = validate_fingerprint_attribute(&buffer, &fingerprint.into())
+            .expect_err("Expected error");
+        assert_eq!(error, StunAgentError::StunCheckFailed);
+
+        let _ = create_response_message(&mut buffer, true);
+        let decoder = MessageDecoderBuilder::default().build();
+        let (msg, _) = decoder.decode(&buffer).expect("Failed to decode message");
+
+        let fingerprint = msg
+            .get::<Fingerprint>()
+            .expect("Expected Fingerprint attribute");
+        assert!(validate_fingerprint_attribute(&buffer, fingerprint)
+            .expect("Failed to validate fingerprint attribute"));
     }
 
     #[test]

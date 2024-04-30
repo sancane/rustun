@@ -1,14 +1,21 @@
 [package]
 name = "stun-agent"
 version = "0.1.0"
+authors = ["Santiago Carot-Nemesio <sancane@gmail.com"]
+description = """Rust framwework to implement STUN agents"""
+documentation = "https://docs.rs/stun-rs"
+homepage = "https://github.com/sancane/rustun"
+repository = "https://github.com/sancane/rustun"
+readme = "README.md"
+keywords = ["STUN", "TURN", "ICE"]
+license = "MIT/Apache-2.0"
+categories = ["network-programming"]
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
-stun-rs = { path = "../stun-rs" }
 log = "0.4.21"
-bytes = "1.6.0"
+stun-rs = { path = "../stun-rs" }
 
 [dev-dependencies]
+enumflags2 = "0.7.5"
 env_logger = "0.11.3"

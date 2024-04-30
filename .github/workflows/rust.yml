@@ -45,6 +45,15 @@ jobs:
       run: cargo install --locked cargo-sort
     - run: cargo sort -w -c
 
+  cargo_doc:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Checking documentation
+      run: cargo doc --all-features
+
   spellcheck:
 
     runs-on: ubuntu-latest
