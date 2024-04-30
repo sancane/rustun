@@ -36,7 +36,7 @@ const PASSWORD_ALGORITHM: u16 = 0x001D;
 /// assert_eq!(attr.algorithm(), AlgorithmId::Unassigned(255));
 /// assert_eq!(attr.parameters(), Some(params.as_ref()));
 ///```
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PasswordAlgorithm(Algorithm);
 
 impl PasswordAlgorithm {

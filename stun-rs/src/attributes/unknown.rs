@@ -2,6 +2,7 @@ use crate::attributes::{AsVerifiable, EncodeAttributeValue, Verifiable};
 use crate::context::AttributeEncoderContext;
 use crate::error::{StunError, StunErrorType};
 use crate::{AttributeType, StunAttribute};
+use std::rc::Rc;
 
 /// Unknown attribute.
 /// This attribute is added to a decoded message when there is not a known handler
@@ -9,10 +10,10 @@ use crate::{AttributeType, StunAttribute};
 /// unknown attribute is discarded unless the `experimental` flag is enabled and
 /// the decoder context had been configured to keep the data associated to unknown
 /// attributes.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Unknown {
     attr_type: AttributeType,
-    attr_data: Option<Vec<u8>>,
+    attr_data: Option<Rc<Vec<u8>>>,
 }
 
 impl Unknown {
@@ -22,7 +23,7 @@ impl Unknown {
     {
         Self {
             attr_type,
-            attr_data: data.into().map(Vec::from),
+            attr_data: data.into().map(Vec::from).map(Rc::new),
         }
     }
 
@@ -38,7 +39,7 @@ impl Unknown {
     /// [`DecoderContextBuilder`](crate::DecoderContextBuilder). This option is only
     /// enabled through the `experimental` flag.
     pub fn attribute_data(&self) -> Option<&[u8]> {
-        self.attr_data.as_ref().map(|v| v.as_ref())
+        self.attr_data.as_ref().map(|v| v.as_ref().as_slice())
     }
 }
 

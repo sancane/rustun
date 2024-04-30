@@ -166,7 +166,7 @@ macro_rules! stunt_attribute_impl (
     ($(($class:ident, $mod:ident $(, $flag:literal)?)),*) => {
         paste::paste! {
             /// STUN Attributes that can be attached to a [`StunMessage`](crate::StunMessage)
-            #[derive(Debug)]
+            #[derive(Debug, Clone)]
             pub enum StunAttribute {
                 $(
                     $(#[cfg(feature = $flag)])?
