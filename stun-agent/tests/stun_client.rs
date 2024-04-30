@@ -1,53 +1,26 @@
-use log::info;
 use std::time::{Duration, Instant};
-use stun_agent::client::{StunClient, StunClienteBuilder};
-use stun_agent::events::{StunTransactionError, StuntEvent};
-use stun_agent::message::StunAttributes;
+use stun_agent::{
+    CredentialMechanism, RttConfig, StunAgentError, StunAttributes, StunClient, StunClienteBuilder,
+    StuntClientEvent, TransportReliability,
+};
+use stun_rs::attributes::stun::Software;
 use stun_rs::methods::BINDING;
-use stun_rs::MessageClass::{Indication, Request};
+use stun_rs::MessageClass::{Indication, Request, SuccessResponse};
 use stun_rs::{
-    DecoderContextBuilder, HMACKey, MessageClass, MessageDecoder, MessageDecoderBuilder,
-    MessageMethod, StunMessage, TransactionId,
+    DecoderContextBuilder, HMACKey, MessageDecoder, MessageDecoderBuilder, MessageEncoderBuilder,
+    StunMessageBuilder, MESSAGE_HEADER_SIZE,
 };
 
 const USERNAME: &str = "test-username";
 const PASSWORD: &str = "test-password";
+const CAPACITY: usize = 1024;
 
-fn check_stun_message(
-    msg: &StunMessage,
-    method: MessageMethod,
-    class: MessageClass,
-    with_msg_integrity: bool,
-    with_msg_integrity_sha256: bool,
-    with_fingerprint: bool,
-) {
-    assert_eq!(msg.method(), method);
-    assert_eq!(msg.class(), class);
+fn init_logging() {
+    let _ = env_logger::builder().is_test(true).try_init();
+}
 
-    let attributes = msg.attributes();
-    let mut iter = attributes.iter();
-    let attr = iter.next().expect("Expected attribute UserName");
-    let username = attr.expect_user_name();
-    assert_eq!(username, USERNAME);
-
-    if with_msg_integrity {
-        let attr = iter.next().expect("Expected attribute MessageIntegrity");
-        assert!(attr.is_message_integrity());
-    }
-
-    if with_msg_integrity_sha256 {
-        let attr = iter
-            .next()
-            .expect("Expected attribute MessageIntegritySha256");
-        assert!(attr.is_message_integrity_sha256());
-    }
-
-    if with_fingerprint {
-        let attr = iter.next().expect("Expected attribute Fingerprint");
-        assert!(attr.is_fingerprint());
-    }
-
-    assert!(iter.next().is_none());
+fn pool_buffer() -> Vec<u8> {
+    vec![0; CAPACITY]
 }
 
 fn create_decoder(key: Option<HMACKey>) -> MessageDecoder {
@@ -61,345 +34,475 @@ fn create_decoder(key: Option<HMACKey>) -> MessageDecoder {
 }
 
 #[test]
-fn test_stun_client_with_short_term_auth_with_fingerprint_no_reliable() {
-    let key = HMACKey::new_short_term(PASSWORD).expect("Failed to create HMACKey");
-    let decoder = create_decoder(Some(key));
+fn test_stun_client_no_events() {
+    init_logging();
 
-    let mut client = StunClienteBuilder::new(USERNAME, PASSWORD).unwrap().build();
+    let mut client =
+        StunClienteBuilder::new(TransportReliability::Unreliable(RttConfig::default()))
+            .build()
+            .expect("Failed to build");
 
     // No events at this point
     let events = client.events();
     assert!(events.is_empty());
+}
 
-    // Send an indication
-    client
-        .create_indication(BINDING, StunAttributes::default())
-        .expect("Failed to create indication");
-    let events = client.events();
-    let mut iter = events.iter();
-    let StuntEvent::OutputBuffer(buffer) = iter.next().expect("Expected event") else {
-        panic!("Expected OutputBuffer event");
-    };
-    assert!(iter.next().is_none());
+#[test]
+fn test_create_stun_client() {
+    init_logging();
 
-    // Check message
-    let (msg, _) = decoder.decode(buffer).expect("Failed to decode message");
-    check_stun_message(&msg, BINDING, Indication, true, true, false);
+    let _client = StunClienteBuilder::new(TransportReliability::Unreliable(RttConfig::default()))
+        .build()
+        .expect("Failed to build");
 
-    // No mor event must be pulled
-    assert!(client.events().is_empty());
+    // Control characters like TAB `U+0009` are disallowed for UserNAme and Password
+    let _client = StunClienteBuilder::new(TransportReliability::Unreliable(RttConfig::default()))
+        .with_mechanism(
+            "bad\u{0009}name",
+            PASSWORD,
+            CredentialMechanism::ShortTerm(None),
+        )
+        .build()
+        .expect_err("Should fail to build");
 
-    // Now send a request
+    let _client = StunClienteBuilder::new(TransportReliability::Unreliable(RttConfig::default()))
+        .with_mechanism(
+            USERNAME,
+            "bad\u{0009}password",
+            CredentialMechanism::ShortTerm(None),
+        )
+        .build()
+        .expect_err("Should fail to build");
+}
+
+#[test]
+fn test_stun_client_send_request() {
+    init_logging();
+
+    let decoder = create_decoder(None);
+
+    let mut client =
+        StunClienteBuilder::new(TransportReliability::Unreliable(RttConfig::default()))
+            .build()
+            .expect("Failed to build");
+
     let instant = std::time::Instant::now();
     client
-        .create_request(BINDING, StunAttributes::default(), instant)
-        .expect("Failed to create indication");
+        .send_request(BINDING, StunAttributes::default(), pool_buffer(), instant)
+        .expect("Failed to create request");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntEvent::OutputBuffer(buffer) = iter.next().expect("Expected event") else {
+    let StuntClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
-    let StuntEvent::RestransmissionTimeOut((_, duration)) = iter.next().expect("Expected event")
+    let (msg, _) = decoder.decode(packet).expect("Failed to decode message");
+    let StuntClientEvent::RestransmissionTimeOut((id, _)) = iter.next().expect("Expected event")
     else {
         panic!("Expected RestransmissionTimeOut event");
     };
-    // Timeout must be 500 ms after instant
-    assert_eq!(*duration, std::time::Duration::from_millis(500));
+    // The timeout should be set for the first message
+    assert_eq!(msg.transaction_id(), id);
+    // No more events
     assert!(iter.next().is_none());
 
-    // Check message
-    let (msg, _) = decoder.decode(buffer).expect("Failed to decode message");
-    check_stun_message(&msg, BINDING, Request, true, true, false);
-
-    // No mor event must be pulled
+    // Another call to events should return an empty list of events
     assert!(client.events().is_empty());
+
+    // Check the message sent
+    assert_eq!(msg.method(), BINDING);
+    assert_eq!(msg.class(), Request);
+    // No aditional attributes must be set
+    assert!(msg.attributes().is_empty())
+}
+
+fn create_client_with_max_retransmissions(max: Option<usize>) -> StunClient {
+    let mut builder =
+        StunClienteBuilder::new(TransportReliability::Unreliable(RttConfig::default()));
+    if let Some(max) = max {
+        builder = builder.with_max_transactions(max);
+    }
+    builder.build().expect("Failed to build")
+}
+
+fn check_max_outstanding_requests(client: &mut StunClient, n: usize) {
+    let instant = std::time::Instant::now();
+
+    for _i in 0..n {
+        // Send a request every 10ms
+        let instant = instant + Duration::from_millis(10);
+        client
+            .send_request(BINDING, StunAttributes::default(), pool_buffer(), instant)
+            .expect("Failed to send request");
+        // consume the events
+        let _events = client.events();
+    }
+
+    // The Nth request should fail
+    let instant = instant + Duration::from_millis(10);
+    let error = client
+        .send_request(BINDING, StunAttributes::default(), pool_buffer(), instant)
+        .expect_err("Expected MaxOutstandingRequestsReached error");
+    assert_eq!(error, StunAgentError::MaxOutstandingRequestsReached);
 }
 
 #[test]
-fn test_stun_client_with_short_term_auth_with_fingerprint_no_reliable_retransmission() {
-    let key = HMACKey::new_short_term(PASSWORD).expect("Failed to create HMACKey");
-    let decoder = create_decoder(Some(key));
+fn test_stun_client_send_max_request() {
+    init_logging();
 
-    let mut client = StunClienteBuilder::new(USERNAME, PASSWORD).unwrap().build();
+    // Check default max outstanding requests
+    let mut client = create_client_with_max_retransmissions(None);
+    check_max_outstanding_requests(&mut client, 10);
+    // Check with a custom max outstanding requests
+    let mut client = create_client_with_max_retransmissions(Some(5));
+    check_max_outstanding_requests(&mut client, 5);
+}
 
-    // Send a first request
+#[test]
+fn test_stun_client_allow_send_request_after_max_request_error() {
+    init_logging();
+
+    // Check with a custom max outstanding requests
+    let mut client = create_client_with_max_retransmissions(Some(1));
+
     let instant = std::time::Instant::now();
     client
-        .create_request(BINDING, StunAttributes::default(), instant)
-        .expect("Failed to create indication");
+        .send_request(BINDING, StunAttributes::default(), pool_buffer(), instant)
+        .expect("Failed to send request");
+    // consume the events
     let events = client.events();
     let mut iter = events.iter();
-    let StuntEvent::OutputBuffer(buffer) = iter.next().expect("Expected event") else {
+    let StuntClientEvent::OutputPacket(_) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
-    let StuntEvent::RestransmissionTimeOut((id, duration)) = iter.next().expect("Expected event")
+    let StuntClientEvent::RestransmissionTimeOut((id, _)) = iter.next().expect("Expected event")
     else {
         panic!("Expected RestransmissionTimeOut event");
     };
-    // Timeout must be 500 ms after instant
-    assert_eq!(*duration, std::time::Duration::from_millis(500));
-    assert!(iter.next().is_none());
-    // Check message
-    let (msg, _) = decoder.decode(buffer).expect("Failed to decode message");
-    check_stun_message(&msg, BINDING, Request, true, true, false);
-    let msg1_id = msg.transaction_id();
-    assert_eq!(msg1_id, id);
 
-    // If we call on timeout now, we  must get the next time out
-    // that should match to the first one
-    client.on_timeout(instant);
-    let events = client.events();
-    let mut iter = events.iter();
-    let StuntEvent::RestransmissionTimeOut((id, duration)) = iter.next().expect("Expected event")
-    else {
-        panic!("Expected RestransmissionTimeOut event");
-    };
-    assert_eq!(msg1_id, id);
-    assert_eq!(*duration, std::time::Duration::from_millis(500));
-    assert!(iter.next().is_none());
+    // Another try to send a request should fail
+    let instant = instant + Duration::from_millis(10);
+    let error = client
+        .send_request(BINDING, StunAttributes::default(), pool_buffer(), instant)
+        .expect_err("Expected MaxOutstandingRequestsReached error");
+    assert_eq!(error, StunAgentError::MaxOutstandingRequestsReached);
+    // Events should be empty
+    assert!(client.events().is_empty());
 
-    // Send a second request 300 ms after the first one
-    let instant = instant + std::time::Duration::from_millis(300);
-    client
-        .create_request(BINDING, StunAttributes::default(), instant)
-        .expect("Failed to create indication");
-    let events = client.events();
-    let mut iter = events.iter();
-    let StuntEvent::OutputBuffer(buffer) = iter.next().expect("Expected event") else {
-        panic!("Expected OutputBuffer event");
-    };
-    let StuntEvent::RestransmissionTimeOut((id, duration)) = iter.next().expect("Expected event")
-    else {
-        panic!("Expected RestransmissionTimeOut event");
-    };
-    // The next timeout must match the first one, and after 300 ms there must
-    // expire after 200ms
-    assert_eq!(msg1_id, id);
-    assert_eq!(*duration, std::time::Duration::from_millis(200));
-    assert!(iter.next().is_none());
-    // Check message
-    let (msg, _) = decoder.decode(buffer).expect("Failed to decode message");
-    check_stun_message(&msg, BINDING, Request, true, true, false);
-    let msg2_id = msg.transaction_id();
-
-    // If we call on timeout now, we  must get the next time out
-    // that should expire in 200 ms
-    client.on_timeout(instant);
-    let events = client.events();
-    let mut iter = events.iter();
-    let StuntEvent::RestransmissionTimeOut((id, duration)) = iter.next().expect("Expected event")
-    else {
-        panic!("Expected RestransmissionTimeOut event");
-    };
-    assert_eq!(msg1_id, id);
-    assert_eq!(*duration, std::time::Duration::from_millis(200));
-    assert!(iter.next().is_none());
-
-    // Advance time to 500 ms after the first request
-    let instant = instant + std::time::Duration::from_millis(200);
-    client.on_timeout(instant);
-    let events = client.events();
-    // After 500 ms the first transaction must be retransmitted
-    let mut iter = events.iter();
-    let StuntEvent::OutputBuffer(buffer) = iter.next().expect("Expected event") else {
-        panic!("Expected OutputBuffer event");
-    };
-    let (msg, _) = decoder.decode(buffer).expect("Failed to decode message");
-    // this must be the first message which must be retransmitted∫
-    assert_eq!(msg1_id, msg.transaction_id());
-
-    // We must get the next timeout for the next transaction pending
-    let StuntEvent::RestransmissionTimeOut((id, duration)) = iter.next().expect("Expected event")
-    else {
-        panic!("Expected RestransmissionTimeOut event");
-    };
-    // The next timeout must match the second one (300 ms after the first one), and after 500 ms
-    // it must expire after 300ms
-    assert_eq!(msg2_id, id);
-    assert_eq!(*duration, std::time::Duration::from_millis(300));
-}
-
-fn test_timout_after_duration(
-    from: Instant,
-    duration: Duration,
-    expected: Duration,
-    msg_id: &TransactionId,
-    client: &mut StunClient,
-    decoder: &MessageDecoder,
-) {
-    let instant = from + duration;
-    client.on_timeout(instant);
-    let events = client.events();
-    let mut iter = events.iter();
-    let StuntEvent::OutputBuffer(buffer) = iter.next().expect("Expected event") else {
-        panic!("Expected OutputBuffer event");
-    };
-    let (msg, _) = decoder.decode(buffer).expect("Failed to decode message");
-    assert_eq!(msg_id, msg.transaction_id());
-    let StuntEvent::RestransmissionTimeOut((id, timeout)) = iter.next().expect("Expected event")
-    else {
-        panic!("Expected RestransmissionTimeOut event");
-    };
-    assert_eq!(msg_id, id);
-    assert_eq!(expected, *timeout);
-    assert!(iter.next().is_none());
-}
-
-fn test_timeout(client: &mut StunClient, decoder: &MessageDecoder) {
-    // Send an indication
-    let now = Instant::now();
-    let instant = now;
-    client
-        .create_request(BINDING, StunAttributes::default(), now)
-        .expect("Failed to create indication");
-    let events = client.events();
-    let mut iter = events.iter();
-    let StuntEvent::OutputBuffer(buffer) = iter.next().expect("Expected event") else {
-        panic!("Expected OutputBuffer event");
-    };
-    let (msg, _) = decoder.decode(buffer).expect("Failed to decode message");
-    let msg_id = msg.transaction_id();
-    let StuntEvent::RestransmissionTimeOut((id, duration)) = iter.next().expect("Expected event")
-    else {
-        panic!("Expected RestransmissionTimeOut event");
-    };
-    assert_eq!(msg_id, id);
-    assert_eq!(duration, &Duration::from_millis(500));
-    assert!(iter.next().is_none());
-
-    info!("Calling on_timeout after 500 ms");
-    test_timout_after_duration(
-        instant,
-        Duration::from_millis(500),
-        Duration::from_millis(1000),
-        msg_id,
-        client,
-        decoder,
-    );
-
-    info!("Calling on_timeout after 1500 ms");
-    test_timout_after_duration(
-        instant,
-        Duration::from_millis(1500),
-        Duration::from_millis(2000),
-        msg_id,
-        client,
-        decoder,
-    );
-
-    info!("Calling on_timeout after 3500 ms");
-    test_timout_after_duration(
-        instant,
-        Duration::from_millis(3500),
-        Duration::from_millis(4000),
-        msg_id,
-        client,
-        decoder,
-    );
-
-    info!("Calling on_timeout after 7500 ms");
-    test_timout_after_duration(
-        instant,
-        Duration::from_millis(7500),
-        Duration::from_millis(8000),
-        msg_id,
-        client,
-        decoder,
-    );
-
-    info!("Calling on_timeout after 15500 ms");
-    test_timout_after_duration(
-        instant,
-        Duration::from_millis(15500),
-        Duration::from_millis(16000),
-        msg_id,
-        client,
-        decoder,
-    );
-
-    info!("Calling on_timeout after 31500 ms");
-    test_timout_after_duration(
-        instant,
-        Duration::from_millis(31500),
-        Duration::from_millis(8000),
-        msg_id,
-        client,
-        decoder,
-    );
-
-    // Another timeout after 8000 ms must make the transaction fail
-    let instant = instant + Duration::from_millis(39500);
-    client.on_timeout(instant);
-    let events = client.events();
-    let mut iter = events.iter();
-    let StuntEvent::TransactionFailed((id, error)) = iter.next().expect("Expected event") else {
-        panic!("Expected TransactionFailed event");
-    };
-    assert_eq!(msg_id, id);
-    assert_eq!(StunTransactionError::TimedOut, *error);
-    assert!(iter.next().is_none());
-}
-
-#[test]
-fn test_stun_client_with_short_term_auth_with_fingerprint_no_reliable_timeout() {
-    let key = HMACKey::new_short_term(PASSWORD).expect("Failed to create HMACKey");
-    let decoder = create_decoder(Some(key));
-
-    let mut client = StunClienteBuilder::new(USERNAME, PASSWORD).unwrap().build();
-
-    test_timeout(&mut client, &decoder);
-}
-
-// Enable next tests when transmission over reliable channel is implemented
-#[test]
-#[ignore]
-fn test_stun_client_with_short_term_auth_with_fingerprint_reliable_timeout() {
-    let key = HMACKey::new_short_term(PASSWORD).expect("Failed to create HMACKey");
-    let decoder = create_decoder(Some(key));
-
-    let mut client = StunClienteBuilder::new(USERNAME, PASSWORD)
-        .unwrap()
-        .reliable()
+    // Reception of a response should allow to send a new request
+    let response = StunMessageBuilder::new(BINDING, SuccessResponse)
+        .with_transaction_id(*id)
         .build();
+    let encoder = MessageEncoderBuilder::default().build();
+    let mut buffer = pool_buffer();
+    encoder
+        .encode(&mut buffer, &response)
+        .expect("msg encoding failed");
+    let instant = instant + Duration::from_millis(10);
+    client
+        .on_buffer_recv(&buffer, instant)
+        .expect("Failed to process buffer");
+    // consume the events
+    let _events = client.events();
 
-    test_timeout(&mut client, &decoder);
+    // Now we can send a new request
+    let buffer = pool_buffer();
+    let instant = instant + Duration::from_millis(10);
+    client
+        .send_request(BINDING, StunAttributes::default(), buffer, instant)
+        .expect("Failed to send request");
 }
 
 #[test]
-fn test_stun_client_delayed_on_timeout_callback() {
-    let key = HMACKey::new_short_term(PASSWORD).expect("Failed to create HMACKey");
-    let decoder = create_decoder(Some(key));
+fn test_stun_client_send_indication() {
+    init_logging();
 
-    let mut client = StunClienteBuilder::new(USERNAME, PASSWORD).unwrap().build();
+    let decoder = create_decoder(None);
+
+    let mut client =
+        StunClienteBuilder::new(TransportReliability::Unreliable(RttConfig::default()))
+            .build()
+            .expect("Failed to build");
+
+    client
+        .send_indication(BINDING, StunAttributes::default(), pool_buffer())
+        .expect("Failed to send indication");
+    let events = client.events();
+    let mut iter = events.iter();
+    let StuntClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
+        panic!("Expected OutputBuffer event");
+    };
+    // No more events
+    assert!(iter.next().is_none());
+
+    // Another call to events should return an empty list of events
+    assert!(client.events().is_empty());
+
+    // Check the message sent
+    let (msg, _) = decoder.decode(packet).expect("Failed to decode message");
+    assert_eq!(msg.method(), BINDING);
+    assert_eq!(msg.class(), Indication);
+    // No aditional attributes must be set
+    assert!(msg.attributes().is_empty())
+}
+
+#[test]
+fn test_stun_client_send_unlimited_indications() {
+    init_logging();
+
+    const N: usize = 5;
+    let mut client = create_client_with_max_retransmissions(Some(N));
+
+    // Send N*2 indications
+    for _i in 0..=N * 2 {
+        client
+            .send_indication(BINDING, StunAttributes::default(), pool_buffer())
+            .expect("Failed to send indication");
+        // consume the events
+        let _events = client.events();
+    }
+}
+
+#[test]
+fn test_stun_client_send_indications_after_send_max_requests() {
+    init_logging();
+
+    let decoder = create_decoder(None);
+    const N: usize = 5;
+    let mut client = create_client_with_max_retransmissions(Some(N));
+    check_max_outstanding_requests(&mut client, 5);
+
+    // We can not send more requests, but we can send indications
+    client
+        .send_indication(BINDING, StunAttributes::default(), pool_buffer())
+        .expect("Failed to send indication");
+    // consume the events
+    let events = client.events();
+    // There must only be one OutputBuffer event with the indicatino itself
+    assert_eq!(events.len(), 1);
+
+    let mut iter = events.iter();
+    let StuntClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
+        panic!("Expected OutputBuffer event");
+    };
+    // No more events
+    assert!(iter.next().is_none());
+
+    // Check the message sent
+    let (msg, _) = decoder.decode(packet).expect("Failed to decode message");
+    assert_eq!(msg.method(), BINDING);
+    assert_eq!(msg.class(), Indication);
+    // No aditional attributes must be set
+    assert!(msg.attributes().is_empty())
+}
+
+#[test]
+fn test_stun_client_recv_unexpected_transaction_id() {
+    init_logging();
+
+    let mut client =
+        StunClienteBuilder::new(TransportReliability::Unreliable(RttConfig::default()))
+            .build()
+            .expect("Failed to build");
+
+    // Reception of a response without a matching transaction id should be ignored
+    let response = StunMessageBuilder::new(BINDING, SuccessResponse).build();
+    let encoder = MessageEncoderBuilder::default().build();
+    let mut buffer = pool_buffer();
+    encoder
+        .encode(&mut buffer, &response)
+        .expect("msg encoding failed");
+
+    let instant = std::time::Instant::now();
+    let res = client.on_buffer_recv(&buffer, instant);
+    assert_eq!(res, Err(StunAgentError::Discarded));
+}
+
+#[test]
+fn test_stun_client_recv_request() {
+    init_logging();
+
+    let mut client =
+        StunClienteBuilder::new(TransportReliability::Unreliable(RttConfig::default()))
+            .build()
+            .expect("Failed to build");
+
+    // Reception of a request should be discarded
+    let response = StunMessageBuilder::new(BINDING, Request).build();
+    let encoder = MessageEncoderBuilder::default().build();
+    let mut buffer = pool_buffer();
+    encoder
+        .encode(&mut buffer, &response)
+        .expect("msg encoding failed");
+
+    let instant = std::time::Instant::now();
+    let res = client.on_buffer_recv(&buffer, instant);
+    assert_eq!(res, Err(StunAgentError::Discarded));
+}
+
+#[test]
+fn test_stun_client_recv_indication() {
+    init_logging();
+
+    let mut client =
+        StunClienteBuilder::new(TransportReliability::Unreliable(RttConfig::default()))
+            .build()
+            .expect("Failed to build");
+
+    // Reception of an indication muste be notified
+    let response = StunMessageBuilder::new(BINDING, Indication).build();
+    let encoder = MessageEncoderBuilder::default().build();
+    let mut buffer = pool_buffer();
+    encoder
+        .encode(&mut buffer, &response)
+        .expect("msg encoding failed");
 
     let instant = std::time::Instant::now();
     client
-        .create_request(BINDING, StunAttributes::default(), instant)
-        .expect("Failed to create indication");
+        .on_buffer_recv(&buffer, instant)
+        .expect("Failed to process buffer");
+
+    // consume the events
     let events = client.events();
     let mut iter = events.iter();
-    let StuntEvent::OutputBuffer(buffer) = iter.next().expect("Expected event") else {
+    let StuntClientEvent::StunMessageReceived(msg) = iter.next().expect("Expected event") else {
+        panic!("Expected StunMessageReceived event");
+    };
+    assert_eq!(msg.method(), BINDING);
+    assert_eq!(msg.class(), Indication);
+    // No more events
+    assert!(iter.next().is_none());
+}
+
+#[test]
+fn test_stun_client_recv_unexpected_data() {
+    init_logging();
+
+    let mut client =
+        StunClienteBuilder::new(TransportReliability::Unreliable(RttConfig::default()))
+            .build()
+            .expect("Failed to build");
+
+    // Reception of a buffer that has the same size of the stun header
+    // but is not a STUN message should be discarded
+    let buffer = [
+        0x53, 0xAF, 0xC4, 0xFF, 0x56, 0x01, 0xFC, 0x12, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+        0x08, 0x09, 0x0A, 0x0B, 0x0C,
+    ];
+
+    let instant = std::time::Instant::now();
+    let res = client.on_buffer_recv(&buffer, instant);
+    assert!(matches!(res, Err(StunAgentError::InternalError(_))));
+}
+
+#[test]
+fn test_stun_client_transaction_finished_sucess_response() {
+    init_logging();
+
+    let mut client =
+        StunClienteBuilder::new(TransportReliability::Unreliable(RttConfig::default()))
+            .build()
+            .expect("Failed to build");
+
+    let instant = std::time::Instant::now();
+    client
+        .send_request(BINDING, StunAttributes::default(), pool_buffer(), instant)
+        .expect("Failed to send request");
+    // consume the events
+    let events = client.events();
+    let mut iter = events.iter();
+    let StuntClientEvent::OutputPacket(_) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
-    let (msg, _) = decoder.decode(buffer).expect("Failed to decode message");
-    let msg_id = msg.transaction_id();
-    let StuntEvent::RestransmissionTimeOut((id, duration)) = iter.next().expect("Expected event")
+    let StuntClientEvent::RestransmissionTimeOut((id, _)) = iter.next().expect("Expected event")
     else {
         panic!("Expected RestransmissionTimeOut event");
     };
-    // Timeout must be 500 ms after instant
-    assert_eq!(msg_id, id);
-    assert_eq!(*duration, std::time::Duration::from_millis(500));
+
+    // Reception of a success response should fire a transaction finished event
+    let response = StunMessageBuilder::new(BINDING, SuccessResponse)
+        .with_transaction_id(*id)
+        .build();
+    let encoder = MessageEncoderBuilder::default().build();
+    let mut buffer = pool_buffer();
+    encoder
+        .encode(&mut buffer, &response)
+        .expect("msg encoding failed");
+    let instant = instant + Duration::from_millis(10);
+    client
+        .on_buffer_recv(&buffer, instant)
+        .expect("Failed to process buffer");
+    // consume the events
+    let events = client.events();
+    let mut iter = events.iter();
+    let StuntClientEvent::StunMessageReceived(msg) = iter.next().expect("Expected event") else {
+        panic!("Expected TransactionFinished event");
+    };
+    // No more events
     assert!(iter.next().is_none());
 
-    // Call on_timeout after 7500 ms
-    info!("Calling on_timeout after 7500 ms");
-    test_timout_after_duration(
-        instant,
-        Duration::from_millis(7500),
-        Duration::from_millis(8000),
-        msg_id,
-        &mut client,
-        &decoder,
-    );
+    // Check response
+    assert_eq!(msg.method(), BINDING);
+    assert_eq!(msg.class(), SuccessResponse);
+    // No aditional attributes must be set
+    assert!(msg.attributes().is_empty());
+}
+
+#[test]
+fn test_stun_client_send_request_small_buffer_failure() {
+    init_logging();
+
+    let mut client =
+        StunClienteBuilder::new(TransportReliability::Unreliable(RttConfig::default()))
+            .build()
+            .expect("Failed to build");
+
+    let instant = std::time::Instant::now();
+    let buffer = vec![0; MESSAGE_HEADER_SIZE - 1];
+    let error = client
+        .send_request(BINDING, StunAttributes::default(), buffer, instant)
+        .expect_err("Expected InternalError");
+    assert!(matches!(error, StunAgentError::InternalError(_)));
+}
+
+#[test]
+fn test_stun_client_send_indication_small_buffer_failure() {
+    init_logging();
+
+    let mut client =
+        StunClienteBuilder::new(TransportReliability::Unreliable(RttConfig::default()))
+            .build()
+            .expect("Failed to build");
+
+    let buffer = vec![0; MESSAGE_HEADER_SIZE - 1];
+    let error = client
+        .send_indication(BINDING, StunAttributes::default(), buffer)
+        .expect_err("Expected InternalError");
+    assert!(matches!(error, StunAgentError::InternalError(_)));
+}
+
+#[test]
+fn test_stun_client_recv_small_buffer_failure() {
+    init_logging();
+
+    let mut client =
+        StunClienteBuilder::new(TransportReliability::Unreliable(RttConfig::default()))
+            .build()
+            .expect("Failed to build");
+
+    // Create a SuccessResponse message with software attribute to skip the header length validation
+    let software = Software::new("STUN test client").expect("Can not create a Sofware attribute");
+    let response = StunMessageBuilder::new(BINDING, SuccessResponse)
+        .with_attribute(software)
+        .build();
+    let encoder = MessageEncoderBuilder::default().build();
+    let mut buffer = pool_buffer();
+    encoder
+        .encode(&mut buffer, &response)
+        .expect("msg encoding failed");
+    let instant = Instant::now();
+    let error = client
+        .on_buffer_recv(&buffer[..MESSAGE_HEADER_SIZE + 2], instant)
+        .expect_err("Expected InternalError");
+    println!("error: {:?}", error);
+    assert!(matches!(error, StunAgentError::InternalError(_)));
 }
