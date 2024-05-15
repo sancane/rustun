@@ -1,6 +1,6 @@
-use crate::attributes::{AttributeType, DecodableStunAttribute, StunAttribute};
+use crate::attributes::{AttributeType, DecodeAttributeValue, StunAttribute};
 use crate::context::AttributeDecoderContext;
-use crate::StunError;
+use crate::{StunAttributeType, StunError};
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 
@@ -11,9 +11,9 @@ pub(crate) type DecoderHandler =
 pub(crate) struct DecoderRegistry(HashMap<AttributeType, DecoderHandler>);
 
 impl DecoderRegistry {
-    pub fn register<A: 'static>(&mut self)
+    pub fn register<A>(&mut self)
     where
-        A: DecodableStunAttribute + Into<StunAttribute>,
+        A: DecodeAttributeValue + StunAttributeType + Into<StunAttribute> + 'static,
     {
         assert!(
             self.0
