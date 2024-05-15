@@ -45,12 +45,6 @@ pub(crate) trait AsVerifiable {
     }
 }
 
-pub(crate) trait EncodableStunAttribute: EncodeAttributeValue + StunAttributeType {}
-pub(crate) trait DecodableStunAttribute:
-    DecodeAttributeValue + StunAttributeType + AsVerifiable
-{
-}
-
 pub(crate) trait EncodeAttributeValue {
     fn encode(&self, ctx: AttributeEncoderContext) -> Result<usize, StunError>;
     fn post_encode(&self, _ctx: AttributeEncoderContext) -> Result<(), StunError> {
@@ -151,8 +145,6 @@ macro_rules! stunt_attribute (
                 $attr_class::get_type()
             }
         }
-        impl crate::attributes::EncodableStunAttribute for $attr_class {}
-        impl crate::attributes::DecodableStunAttribute for $attr_class {}
         impl From<$attr_class> for crate::attributes::StunAttribute {
             fn from(value: $attr_class) -> Self {
                 crate::attributes::StunAttribute::$attr_class(value)
