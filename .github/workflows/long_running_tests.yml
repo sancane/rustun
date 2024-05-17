@@ -1,0 +1,28 @@
+name: Run tests for 3 hours
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Run all days at 00:00 UTC
+    - cron: '0 0 * * *'
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Runing tests for 3 hours
+        run: |
+          TOTAL_TIME=(3 * 60)
+          COMMAND="RUST_BACKTRACE=1 cargo test --verbose --all-features"
+          START_TIME=$(date +%s)
+          ITERATION=1
+          while $COMMAND; do
+            echo "[$ITERATION] Running tests..."
+            CURRENT_TIME=$(date +%s)
+            ELAPSED_TIME=$((CURRENT_TIME - START_TIME))
+            if [ $ELAPSED_TIME -ge $TOTAL_TIME ]; then
+              echo "Tests ran for 3 hours, iteration: $ITERATION, exiting..."
+              exit 0
+            fi
+          done
