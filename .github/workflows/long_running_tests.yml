@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Runing tests for 3 hours
         run: |
-          TOTAL_TIME=(3 * 60)
+          TOTAL_TIME=(3*60)
           COMMAND="cargo test --verbose --all-features"
           START_TIME=$(date +%s)
           ITERATION=1
