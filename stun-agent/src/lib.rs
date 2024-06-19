@@ -23,7 +23,9 @@
 
 use std::{ops::Deref, slice::Iter, sync::Arc};
 
+use stun_rs::MessageHeader;
 use stun_rs::StunAttribute;
+use stun_rs::MESSAGE_HEADER_SIZE;
 
 mod client;
 mod events;
@@ -109,6 +111,175 @@ impl Deref for StunPacket {
 impl AsRef<[u8]> for StunPacket {
     fn as_ref(&self) -> &[u8] {
         self
+    }
+}
+
+/// A STUN packet decoder that can be used to decode a STUN packet.
+/// The [`StunPacketDecoder`] is helpful when reading bytes from a stream oriented connection,
+/// such as a TCP stream, or even when reading bytes from a datagram oriented connection, such as
+/// a UDP socket when the STUN packet is fragmented.
+#[derive(Debug)]
+pub struct StunPacketDecoder {
+    buffer: Vec<u8>,
+    current_size: usize,
+    expected_size: Option<usize>,
+}
+
+/// Describes the possible outcomes of the STUN packet decoding.
+/// - If the STUN packet has been fully decoded, the method returns the decoded STUN packet
+/// and the number of bytes consumed.
+/// - If the STUN packet has not been fully decoded, the method returns the decoder and the
+/// number of bytes still needed to complete the STUN packet, if known.
+#[derive(Debug)]
+pub enum StunPacketDecodedValue {
+    /// Returns the decoded STUN packet and the number of bytes consumed from the input.
+    Decoded((StunPacket, usize)),
+    /// Returns the decoder and the number of bytes missing to complete the STUN packet if known.
+    MoreBytesNeeded((StunPacketDecoder, Option<usize>)),
+}
+
+/// Describe the error type that can occur during the STUN packet decoding.
+#[derive(Debug)]
+pub enum StunPacketErrorType {
+    /// The buffer is too small to hold the STUN packet.
+    SmallBuffer,
+    /// The buffer does not contain a valid STUN header.
+    InvalidStunPacket,
+}
+
+/// Describes the error that can occur during the STUN packet decoding.
+#[derive(Debug)]
+pub struct StunPacketDecodedError {
+    /// The type of error that occurred during the STUN packet decoding.
+    pub error_type: StunPacketErrorType,
+    /// The internal buffer filled with bytes.
+    pub buffer: Vec<u8>,
+    /// The size of the buffer that has been filled.
+    pub size: usize,
+    /// The number of bytes consumed from the input data.
+    pub consumed: usize,
+}
+
+impl StunPacketDecoder {
+    /// Creates a new STUN packet decoder using the provided buffer. The buffer must be
+    /// at least 20 bytes long to accommodate the STUN message header. If the buffer is
+    /// too small, an error is returned.
+    pub fn new(buffer: Vec<u8>) -> Result<Self, StunPacketDecodedError> {
+        if buffer.len() < MESSAGE_HEADER_SIZE {
+            return Err(StunPacketDecodedError {
+                error_type: StunPacketErrorType::SmallBuffer,
+                buffer,
+                size: 0,
+                consumed: 0,
+            });
+        }
+        Ok(StunPacketDecoder {
+            buffer,
+            current_size: 0,
+            expected_size: None,
+        })
+    }
+
+    /// Decodes the given data and returns the decoded STUN packet. This method takes the data
+    /// read so far as an argument and returns one of the following outcomes:
+    /// - If the STUN packet has been fully decoded, the method returns the decoded STUN packet
+    /// and the number of bytes consumed.
+    /// - If the STUN packet has not been fully decoded, the method returns the decoder and the
+    /// number of bytes still needed to complete the STUN packet, if known.
+    /// - If the buffer is too small or the header does not correspond to a STUN message, the
+    /// method returns an error.
+    /// Note: This method does not perform a full validation of the STUN message; it only checks
+    /// the header. Integrity checks and other validations will be performed by the STUN agent.
+    pub fn decode(mut self, data: &[u8]) -> Result<StunPacketDecodedValue, StunPacketDecodedError> {
+        match self.expected_size {
+            Some(size) => {
+                // At this point we know that the buffer is big enough to hold the message,
+                // so we do not need to check bounds.
+                let first = self.current_size;
+                let remaining = size - first;
+                if data.len() >= remaining {
+                    // Copy only up to the message length
+                    self.buffer[first..size].copy_from_slice(&data[..remaining]);
+                    let packet = StunPacket::new(self.buffer, size);
+                    Ok(StunPacketDecodedValue::Decoded((packet, remaining)))
+                } else {
+                    // Copy all the data
+                    self.buffer[first..first + data.len()].copy_from_slice(&data[..data.len()]);
+                    self.current_size += data.len();
+                    Ok(StunPacketDecodedValue::MoreBytesNeeded((
+                        self,
+                        Some(remaining - data.len()),
+                    )))
+                }
+            }
+            None => {
+                let header_length = self.current_size + data.len();
+                if header_length >= MESSAGE_HEADER_SIZE {
+                    let first = self.current_size;
+                    let remaining = MESSAGE_HEADER_SIZE - first;
+
+                    // Write the STUN message header
+                    self.buffer[first..first + remaining].copy_from_slice(&data[..remaining]);
+
+                    // We can decode the header now
+                    let slice: &[u8; MESSAGE_HEADER_SIZE] =
+                        self.buffer[..MESSAGE_HEADER_SIZE].try_into().unwrap();
+                    let Ok(header) = MessageHeader::try_from(slice) else {
+                        return Err(StunPacketDecodedError {
+                            error_type: StunPacketErrorType::InvalidStunPacket,
+                            buffer: self.buffer,
+                            size: MESSAGE_HEADER_SIZE,
+                            consumed: remaining,
+                        });
+                    };
+                    let msg_length = header.msg_length as usize;
+
+                    // Check if the buffer provided is big enough to hold the message
+                    if self.buffer.len() < msg_length + MESSAGE_HEADER_SIZE {
+                        return Err(StunPacketDecodedError {
+                            error_type: StunPacketErrorType::SmallBuffer,
+                            buffer: self.buffer,
+                            size: MESSAGE_HEADER_SIZE,
+                            consumed: remaining,
+                        });
+                    }
+
+                    self.expected_size = Some(msg_length + MESSAGE_HEADER_SIZE);
+
+                    if data.len() >= msg_length + remaining {
+                        // Copy only up to the message length
+                        self.buffer[MESSAGE_HEADER_SIZE..MESSAGE_HEADER_SIZE + msg_length]
+                            .copy_from_slice(&data[remaining..remaining + msg_length]);
+                        let packet = StunPacket::new(self.buffer, msg_length + MESSAGE_HEADER_SIZE);
+                        Ok(StunPacketDecodedValue::Decoded((
+                            packet,
+                            remaining + msg_length,
+                        )))
+                    } else {
+                        // Copy all the remaining data
+                        self.buffer
+                            [MESSAGE_HEADER_SIZE..MESSAGE_HEADER_SIZE + data.len() - remaining]
+                            .copy_from_slice(&data[remaining..data.len()]);
+                        self.current_size += data.len();
+                        let remaining = msg_length + MESSAGE_HEADER_SIZE - self.current_size;
+                        Ok(StunPacketDecodedValue::MoreBytesNeeded((
+                            self,
+                            Some(remaining),
+                        )))
+                    }
+                } else {
+                    // The number of bytes is less than the header size, so we can safety copy all
+                    // the data because the minimum size of the byte is 20 bytes.
+                    let first = self.current_size;
+                    let remaining = data.len();
+                    self.buffer[first..first + remaining].copy_from_slice(&data[..remaining]);
+                    self.current_size += data.len();
+
+                    // We still don't know the message length
+                    Ok(StunPacketDecodedValue::MoreBytesNeeded((self, None)))
+                }
+            }
+        }
     }
 }
 
@@ -451,5 +622,203 @@ mod tests_protected_iterator {
         assert!(attr.is_fingerprint());
 
         assert!(iter.next().is_none());
+    }
+}
+
+#[cfg(test)]
+mod test_stun_packet_decoder {
+    use super::*;
+    use stun_vectors::SAMPLE_IPV4_RESPONSE;
+
+    #[test]
+    fn test_stun_packet_decoder_small_parts() {
+        let buffer = vec![0; 1024];
+        let decoder = StunPacketDecoder::new(buffer).expect("Failed to create decoder");
+
+        let mut index = 0;
+        let data = &SAMPLE_IPV4_RESPONSE[index..10];
+        let decoded = decoder.decode(data).expect("Failed to decode");
+        let StunPacketDecodedValue::MoreBytesNeeded((decoder, remaining)) = decoded else {
+            panic!("Expected more bytes needed");
+        };
+        // Message header is not processed, so we have no information about remaining bytes
+        assert_eq!(remaining, None);
+        assert_eq!(decoder.current_size, 10);
+        assert!(decoder.expected_size.is_none());
+
+        index = 10;
+        let data = &SAMPLE_IPV4_RESPONSE[index..15];
+        let decoded = decoder.decode(data).expect("Failed to decode");
+        let StunPacketDecodedValue::MoreBytesNeeded((decoder, remaining)) = decoded else {
+            panic!("Expected more bytes needed");
+        };
+        // Message header is not processed, so we have no information about remaining bytes
+        assert_eq!(remaining, None);
+        assert_eq!(decoder.current_size, 15);
+        assert!(decoder.expected_size.is_none());
+        assert_eq!(decoder.buffer[..15], SAMPLE_IPV4_RESPONSE[..15]);
+
+        index = 15;
+        let data = &SAMPLE_IPV4_RESPONSE[index..index + 5];
+        let decoded = decoder.decode(data).expect("Failed to decode");
+        let StunPacketDecodedValue::MoreBytesNeeded((decoder, remaining)) = decoded else {
+            panic!("Expected more bytes needed");
+        };
+        // Header is processed and the msg length is 60 (0x3C)
+        assert_eq!(remaining, Some(60));
+        assert_eq!(decoder.current_size, 20);
+        assert_eq!(decoder.expected_size, Some(60 + MESSAGE_HEADER_SIZE));
+        assert_eq!(decoder.buffer[..20], SAMPLE_IPV4_RESPONSE[..20]);
+
+        index = 20;
+        let data = &SAMPLE_IPV4_RESPONSE[index..index + 30];
+        let decoded = decoder.decode(data).expect("Failed to decode");
+        let StunPacketDecodedValue::MoreBytesNeeded((decoder, remaining)) = decoded else {
+            panic!("Expected more bytes needed");
+        };
+        assert_eq!(remaining, Some(30));
+        assert_eq!(decoder.current_size, 50);
+        assert_eq!(decoder.buffer[..50], SAMPLE_IPV4_RESPONSE[..50]);
+
+        index = 50;
+        let data = &SAMPLE_IPV4_RESPONSE[index..index + 29];
+        let decoded = decoder.decode(data).expect("Failed to decode");
+        let StunPacketDecodedValue::MoreBytesNeeded((decoder, remaining)) = decoded else {
+            panic!("Expected more bytes needed");
+        };
+        assert_eq!(remaining, Some(1));
+        assert_eq!(decoder.current_size, 79);
+        assert_eq!(decoder.buffer[..79], SAMPLE_IPV4_RESPONSE[..79]);
+
+        // Complete the byte remaining to complete the STUN packet
+        index = 79;
+        let data = &SAMPLE_IPV4_RESPONSE[index..index + 1];
+        let decoded = decoder.decode(data).expect("Failed to decode");
+        let StunPacketDecodedValue::Decoded((packet, consumed)) = decoded else {
+            panic!("Stun packed not decoded");
+        };
+        assert_eq!(consumed, 1);
+        assert_eq!(&SAMPLE_IPV4_RESPONSE, packet.as_ref());
+    }
+
+    #[test]
+    fn test_stun_packet_decoder_one_step() {
+        let buffer = vec![0; 1024];
+        let decoder = StunPacketDecoder::new(buffer).expect("Failed to create decoder");
+
+        // Read the buffer in one go
+        let decoded = decoder
+            .decode(&SAMPLE_IPV4_RESPONSE)
+            .expect("Failed to decode");
+        let StunPacketDecodedValue::Decoded((packet, consumed)) = decoded else {
+            panic!("Stun packed not decoded");
+        };
+        assert_eq!(consumed, SAMPLE_IPV4_RESPONSE.len());
+        assert_eq!(&SAMPLE_IPV4_RESPONSE, packet.as_ref());
+    }
+
+    #[test]
+    fn test_stun_packet_decoder_two_step() {
+        let buffer = vec![0; 1024];
+        let decoder = StunPacketDecoder::new(buffer).expect("Failed to create decoder");
+
+        let data = &SAMPLE_IPV4_RESPONSE[..15];
+        let decoded = decoder.decode(data).expect("Failed to decode");
+        let StunPacketDecodedValue::MoreBytesNeeded((decoder, remaining)) = decoded else {
+            panic!("Expected more bytes needed");
+        };
+        // Message header is not processed, so we have no information about remaining bytes
+        assert_eq!(remaining, None);
+        assert_eq!(decoder.current_size, 15);
+        assert!(decoder.expected_size.is_none());
+
+        // Read the rest of the packet
+        let data = &SAMPLE_IPV4_RESPONSE[15..];
+        let decoded = decoder.decode(data).expect("Failed to decode");
+        let StunPacketDecodedValue::Decoded((packet, consumed)) = decoded else {
+            panic!("Stun packed not decoded");
+        };
+        assert_eq!(consumed, data.len());
+        assert_eq!(&SAMPLE_IPV4_RESPONSE, packet.as_ref());
+    }
+
+    #[test]
+    fn test_stun_packet_decoder_byte_by_byte() {
+        let buffer = vec![0; 1024];
+        let mut decoder = StunPacketDecoder::new(buffer).expect("Failed to create decoder");
+
+        let total = SAMPLE_IPV4_RESPONSE.len();
+        for index in 0..total {
+            let data = &SAMPLE_IPV4_RESPONSE[index..index + 1];
+            let decoded = decoder.decode(data).expect("Failed to decode");
+            if index < total - 1 {
+                let StunPacketDecodedValue::MoreBytesNeeded((deco, remaining)) = decoded else {
+                    panic!("Expected more bytes needed");
+                };
+                if index >= MESSAGE_HEADER_SIZE - 1 {
+                    assert_eq!(remaining, Some(total - 1 - index));
+                } else {
+                    assert_eq!(remaining, None);
+                }
+                decoder = deco;
+            } else {
+                let StunPacketDecodedValue::Decoded((packet, consumed)) = decoded else {
+                    panic!("Stun packed not decoded");
+                };
+                assert_eq!(consumed, 1);
+                assert_eq!(&SAMPLE_IPV4_RESPONSE, packet.as_ref());
+                break;
+            }
+        }
+    }
+
+    #[test]
+    fn test_stun_packet_decoder_small_buffer() {
+        let buffer = vec![0; 10];
+        let error = StunPacketDecoder::new(buffer).expect_err("Expected small buffer error");
+        let StunPacketErrorType::SmallBuffer = error.error_type else {
+            panic!("Expected small buffer error");
+        };
+
+        let buffer = vec![0; 50];
+        let decoder = StunPacketDecoder::new(buffer).expect("Failed to create decoder");
+
+        let result = decoder
+            .decode(&SAMPLE_IPV4_RESPONSE[..10])
+            .expect("Failed to decode");
+        // We could not read the whole header, so it won't fail
+        let StunPacketDecodedValue::MoreBytesNeeded((decoder, None)) = result else {
+            panic!("Expected more bytes needed");
+        };
+
+        let error = decoder
+            .decode(&SAMPLE_IPV4_RESPONSE[10..])
+            .expect_err("Expected error");
+        // The header is read and the buffer is too small to hold the whole message
+        let StunPacketErrorType::SmallBuffer = error.error_type else {
+            panic!("Expected small buffer error");
+        };
+
+        // Test the same scenario but trying to decode the buffer in one go
+        let buffer = vec![0; 50];
+        let decoder = StunPacketDecoder::new(buffer).expect("Failed to create decoder");
+        let error = decoder
+            .decode(&SAMPLE_IPV4_RESPONSE)
+            .expect_err("Expected error");
+        let StunPacketErrorType::SmallBuffer = error.error_type else {
+            panic!("Expected small buffer error");
+        };
+    }
+
+    #[test]
+    fn test_stun_packet_decoder_invalid_stun_packet() {
+        let buffer = vec![0; 1024];
+        let decoder = StunPacketDecoder::new(buffer).expect("Failed to create decoder");
+
+        let data = vec![0; 1024];
+        let error = decoder.decode(&data).expect_err("Expected error");
+        let StunPacketErrorType::InvalidStunPacket = error.error_type else {
+            panic!("Expected invalid STUN packet error");
+        };
     }
 }
