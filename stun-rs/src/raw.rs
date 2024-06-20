@@ -1,7 +1,7 @@
 use crate::common::{check_buffer_boundaries, padding};
 use crate::error::{StunError, StunErrorType};
 use crate::types::{MAGIC_COOKIE_SIZE, TRANSACTION_ID_SIZE};
-use crate::Decode;
+use crate::{Decode, MAGIC_COOKIE};
 use byteorder::{BigEndian, ByteOrder};
 use fallible_iterator::{FallibleIterator, IntoFallibleIterator};
 use std::convert::{TryFrom, TryInto};
@@ -63,10 +63,28 @@ impl<'a> Decode<'a> for MessageHeader<'a> {
 
         let msg_type = BigEndian::read_u16(&buffer[..2]);
         let bits: u8 = (msg_type >> 14).try_into()?;
+
+        if bits != 0 {
+            // First two bits in the header are not 0
+            return Err(StunError::new(
+                StunErrorType::InvalidParam,
+                format!("Invalid STUN header bits: {:#02x}", bits),
+            ));
+        }
+
         let msg_type = msg_type & 0x3FFF;
         let msg_length = BigEndian::read_u16(&buffer[2..4]);
 
         let cookie = <&[u8; MAGIC_COOKIE_SIZE]>::try_from(&buffer[4..8])?;
+
+        if cookie != MAGIC_COOKIE {
+            // Cookie in the header is not the STUN magic cookie.
+            return Err(StunError::new(
+                StunErrorType::InvalidParam,
+                format!("Invalid STUN cookie: {:?}", cookie),
+            ));
+        }
+
         let transaction_id = <&[u8; TRANSACTION_ID_SIZE]>::try_from(&buffer[8..20])?;
 
         Ok((
@@ -263,8 +281,30 @@ mod tests {
             0xbc, 0x34, 0xd6, 0x86, // }  Transaction ID
             0xfa, 0x87, 0xdf, 0xae, // }
         ];
+        // Heder bits are not 00
+        let error = MessageHeader::try_from(&header).expect_err("Error expected");
+        assert_eq!(error, StunErrorType::InvalidParam);
+
+        let header = [
+            0x80, 0x01, 0x00, 0x58, // Request type and message length
+            0x21, 0x12, 0xa4, 0x42, // Magic cookie
+            0xff, 0xff, 0xff, 0xff, // }
+            0xff, 0xff, 0xff, 0xff, // }  Transaction ID
+            0xff, 0xff, 0xff, 0xff, // }
+        ];
+        // Invalid MACIG COOKIE
+        let error = MessageHeader::try_from(&header).expect_err("Error expected");
+        assert_eq!(error, StunErrorType::InvalidParam);
+
+        let header = [
+            0x00, 0x01, 0x00, 0x58, // Request type and message length
+            0x21, 0x12, 0xa4, 0x42, // Magic cookie
+            0xb7, 0xe7, 0xa7, 0x01, // }
+            0xbc, 0x34, 0xd6, 0x86, // }  Transaction ID
+            0xfa, 0x87, 0xdf, 0xae, // }
+        ];
         let header = MessageHeader::try_from(&header).expect("Can not get STUN header");
-        assert_eq!(header.bits, 0x02);
+        assert_eq!(header.bits, 0x00);
         assert_eq!(header.msg_type, 0x01);
         assert_eq!(header.msg_length, 0x58);
         assert!(MAGIC_COOKIE.eq(header.cookie));
