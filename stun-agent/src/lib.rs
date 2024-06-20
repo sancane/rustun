@@ -118,6 +118,12 @@ impl AsRef<[u8]> for StunPacket {
 /// The [`StunPacketDecoder`] is helpful when reading bytes from a stream oriented connection,
 /// such as a TCP stream, or even when reading bytes from a datagram oriented connection, such as
 /// a UDP socket when the STUN packet is fragmented.
+///```rust
+/// # use stun_agent::StunPacketDecoder;
+///
+/// //let buffer = vec![0; 1024];
+/// //let mut decoder = StunPacketDecoder::new(buffer).expect("Failed to create decoder");
+///```
 #[derive(Debug)]
 pub struct StunPacketDecoder {
     buffer: Vec<u8>,
