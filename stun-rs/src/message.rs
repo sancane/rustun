@@ -324,7 +324,7 @@ impl StunMessage {
     }
 
     /// Returns the attributes contained in this STUN message.
-    pub fn attributes(&self) -> &Vec<StunAttribute> {
+    pub fn attributes(&self) -> &[StunAttribute] {
         &self.attributes
     }
 

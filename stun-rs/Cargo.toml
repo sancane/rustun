@@ -10,7 +10,7 @@ readme = "README.md"
 keywords = ["STUN", "TURN", "ICE"]
 license = "MIT/Apache-2.0"
 categories = ["network-programming"]
-edition = "2018"
+edition = "2021"
 
 [dev-dependencies]
 stun-vectors = { path = "../stun-vectors" }
