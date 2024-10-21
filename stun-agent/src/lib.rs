@@ -116,8 +116,8 @@ impl AsRef<[u8]> for StunPacket {
 
 /// A STUN packet decoder that can be used to decode a STUN packet.
 /// The [`StunPacketDecoder`] is helpful when reading bytes from a stream oriented connection,
-/// such as a TCP stream, or even when reading bytes from a datagram oriented connection, such as
-/// a UDP socket when the STUN packet is fragmented.
+/// such as a `TCP` stream, or even when reading bytes from a datagram oriented connection, such as
+/// a `UDP` socket when the STUN packet is fragmented.
 ///```rust
 /// # use stun_agent::StunPacketDecoder;
 ///
