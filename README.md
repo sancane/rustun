@@ -21,6 +21,12 @@ Rust library designed to manipulate STUN messages. It supports:
 * [`RFC8489`](https://datatracker.ietf.org/doc/html/rfc8489). Session Traversal Utilities for NAT (STUN).
 * [`RFC8656`](https://datatracker.ietf.org/doc/html/rfc8656). Traversal Using Relays around NAT (TURN).
 
+## Crate [stun-agent](stun-agent/README.md)
+[![Crates.io](https://img.shields.io/crates/v/stun-agent)](https://crates.io/crates/stun-agent)
+[![Docs](https://img.shields.io/docsrs/stun-agent/latest)](https://docs.rs/stun-agent)
+
+Rust Sans I/O framwework to implement STUN agents.
+
 # Contributing
 
 Patches and feedback are welcome.
