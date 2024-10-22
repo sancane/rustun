@@ -1,3 +1,8 @@
+[![Crates.io](https://img.shields.io/crates/v/stun-agent)](https://crates.io/crates/stun-agent)
+[![Docs](https://img.shields.io/docsrs/stun-agent/latest)](https://docs.rs/stun-agent)
+[![codecov](https://codecov.io/gh/sancane/rustun/branch/main/graph/badge.svg?token=19Juem5PrN)](https://codecov.io/gh/sancane/rustun)
+[![Rust Report Card](https://rust-reportcard.xuri.me/badge/github.com/sancane/rustun)](https://rust-reportcard.xuri.me/report/github.com/sancane/rustun)
+
 # Crate stun-agent
 
 ## STUN Agent library for Rust.

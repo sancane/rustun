@@ -1,9 +1,9 @@
 [package]
 name = "stun-agent"
-version = "0.1.0"
+version = "0.1.2"
 authors = ["Santiago Carot-Nemesio <sancane@gmail.com"]
-description = """Rust framwework to implement STUN agents"""
-documentation = "https://docs.rs/stun-rs"
+description = """Rust Sans I/O framwework to implement STUN agents"""
+documentation = "https://docs.rs/crate/stun-agent/"
 homepage = "https://github.com/sancane/rustun"
 repository = "https://github.com/sancane/rustun"
 readme = "README.md"
