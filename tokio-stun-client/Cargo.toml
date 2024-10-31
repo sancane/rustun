@@ -1,0 +1,18 @@
+[package]
+name = "tokio-stun-client"
+version = "0.1.0"
+authors = ["Santiago Carot-Nemesio <sancane@gmail.com"]
+description = """Tokio async client for STUN protocol"""
+documentation = "https://docs.rs/tokio-stun-client"
+homepage = "https://github.com/sancane/rustun"
+repository = "https://github.com/sancane/rustun"
+readme = "README.md"
+keywords = ["STUN", "TURN", "ICE"]
+license = "MIT/Apache-2.0"
+categories = ["network-programming"]
+edition = "2021"
+
+[dependencies]
+stun-agent = { path = "../stun-agent" }
+stun-rs = { path = "../stun-rs" }
+tokio = { version = "1.41.0", features = ["full"] }

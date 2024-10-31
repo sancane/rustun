@@ -5,4 +5,5 @@ members = ["stun-agent",
     "stun-agent",
     "stun-rs",
     "stun-vectors",
+    "tokio-stun-client",
 ]

@@ -24,7 +24,7 @@ pub enum StuntClientEvent {
 }
 
 /// Errors that can be raised by the STUN client when a transaction fails.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum StunTransactionError {
     /// The transaction has been canceled by the client.
     DoNotRetry,
