@@ -24,12 +24,13 @@ fn check_fingerprint_paramaters(
 ) {
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
+    let StuntClientEvent::OutputPacket((tid, packet)) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
     let decoder = MessageDecoderBuilder::default().build();
 
     let (msg, _) = decoder.decode(packet).expect("Failed to decode message");
+    assert_eq!(tid, msg.transaction_id());
     // No attributes must be set for the first request
     assert!(!msg.attributes().is_empty());
     let mut attr_iter = msg.attributes().iter();

@@ -774,7 +774,10 @@ impl StunClient {
         self.transactions.insert(*msg.transaction_id(), transaction);
 
         let mut events = self.transaction_events.init();
-        events.push(StuntClientEvent::OutputPacket(packet));
+        events.push(StuntClientEvent::OutputPacket((
+            *msg.transaction_id(),
+            packet,
+        )));
 
         // Add the most recent timout event if any
         if let Some((id, left)) = self.timeouts.next_timeout(instant) {
@@ -810,7 +813,10 @@ impl StunClient {
         })?;
 
         let mut events = self.transaction_events.init();
-        events.push(StuntClientEvent::OutputPacket(packet));
+        events.push(StuntClientEvent::OutputPacket((
+            *msg.transaction_id(),
+            packet,
+        )));
 
         Ok(*msg.transaction_id())
     }
@@ -921,7 +927,10 @@ impl StunClient {
                         transaction.instant = None;
                         self.timeouts.add(instant, rto, transaction_id);
                         debug!("set timeout {:?} for transaction {:?}", rto, transaction_id);
-                        events.push(StuntClientEvent::OutputPacket(transaction.packet.clone()));
+                        events.push(StuntClientEvent::OutputPacket((
+                            transaction_id,
+                            transaction.packet.clone(),
+                        )));
                     }
                     None => {
                         let protection_violated = self.mechanism.as_mut().map_or(false, |m| {

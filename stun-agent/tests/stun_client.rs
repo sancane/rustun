@@ -92,10 +92,11 @@ fn test_stun_client_send_request() {
         .expect("Failed to create request");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
+    let StuntClientEvent::OutputPacket((id, packet)) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
     let (msg, _) = decoder.decode(packet).expect("Failed to decode message");
+    assert_eq!(id, msg.transaction_id());
     let StuntClientEvent::RestransmissionTimeOut((id, _)) = iter.next().expect("Expected event")
     else {
         panic!("Expected RestransmissionTimeOut event");
@@ -228,7 +229,7 @@ fn test_stun_client_send_indication() {
         .expect("Failed to send indication");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
+    let StuntClientEvent::OutputPacket((tid, packet)) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
     // No more events
@@ -242,7 +243,8 @@ fn test_stun_client_send_indication() {
     assert_eq!(msg.method(), BINDING);
     assert_eq!(msg.class(), Indication);
     // No aditional attributes must be set
-    assert!(msg.attributes().is_empty())
+    assert!(msg.attributes().is_empty());
+    assert_eq!(msg.transaction_id(), tid);
 }
 
 #[test]
@@ -281,7 +283,7 @@ fn test_stun_client_send_indications_after_send_max_requests() {
     assert_eq!(events.len(), 1);
 
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
+    let StuntClientEvent::OutputPacket((tid, packet)) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
     // No more events
@@ -292,7 +294,8 @@ fn test_stun_client_send_indications_after_send_max_requests() {
     assert_eq!(msg.method(), BINDING);
     assert_eq!(msg.class(), Indication);
     // No aditional attributes must be set
-    assert!(msg.attributes().is_empty())
+    assert!(msg.attributes().is_empty());
+    assert_eq!(msg.transaction_id(), tid);
 }
 
 #[test]

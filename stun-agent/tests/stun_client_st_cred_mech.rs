@@ -109,10 +109,11 @@ fn test_stun_client_send_request_unreliable() {
         .expect("Failed to create request");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
+    let StuntClientEvent::OutputPacket((tid, packet)) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
     let (msg, _) = decoder.decode(packet).expect("Failed to decode message");
+    assert_eq!(tid, msg.transaction_id());
     check_attributes(None, msg.attributes());
     assert_eq!(&transaction_id, msg.transaction_id());
     let StuntClientEvent::RestransmissionTimeOut((id, _)) = iter.next().expect("Expected event")
@@ -150,10 +151,11 @@ fn test_stun_client_send_indication_unreliable() {
         .expect("Failed to create request");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
+    let StuntClientEvent::OutputPacket((tid, packet)) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
     let (msg, _) = decoder.decode(packet).expect("Failed to decode message");
+    assert_eq!(tid, msg.transaction_id());
     check_attributes(None, msg.attributes());
     assert_eq!(&transaction_id, msg.transaction_id());
     // No more events
@@ -190,9 +192,10 @@ fn test_stun_client_send_request_unreliable_with_integrity() {
         .expect("Failed to create request");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
+    let StuntClientEvent::OutputPacket((tid, packet)) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
+    assert_eq!(tid, &transaction_id);
     let (msg, _) = decoder.decode(packet).expect("Failed to decode message");
     check_attributes(Some(Integrity::MessageIntegrity), msg.attributes());
     assert_eq!(&transaction_id, msg.transaction_id());
@@ -232,9 +235,10 @@ fn test_stun_client_send_indication_unreliable_with_integrity() {
         .expect("Failed to create request");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
+    let StuntClientEvent::OutputPacket((tid, packet)) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
+    assert_eq!(tid, &transaction_id);
     let (msg, _) = decoder.decode(packet).expect("Failed to decode message");
     check_attributes(Some(Integrity::MessageIntegrity), msg.attributes());
     assert_eq!(&transaction_id, msg.transaction_id());
@@ -323,10 +327,11 @@ fn test_stun_client_recv_request_unreliable_corrupted_integrity() {
         .expect("Failed to create request");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
+    let StuntClientEvent::OutputPacket((tid, packet)) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
     let (msg, _) = decoder.decode(packet).expect("Failed to decode message");
+    assert_eq!(tid, msg.transaction_id());
     check_attributes(Some(Integrity::MessageIntegrity), msg.attributes());
     assert_eq!(&transaction_id, msg.transaction_id());
     let StuntClientEvent::RestransmissionTimeOut((id, _)) = iter.next().expect("Expected event")
@@ -398,9 +403,10 @@ fn test_stun_client_recv_request_reliable_corrupted_integrity() {
         .expect("Failed to create request");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
+    let StuntClientEvent::OutputPacket((tid, packet)) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
+    assert_eq!(tid, &transaction_id);
     let (msg, _) = decoder.decode(packet).expect("Failed to decode message");
     check_attributes(Some(Integrity::MessageIntegrity), msg.attributes());
     assert_eq!(&transaction_id, msg.transaction_id());
@@ -467,9 +473,10 @@ fn test_timeout(reliability: TransportReliability) {
         .expect("Failed to create request");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
+    let StuntClientEvent::OutputPacket((tid, packet)) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
+    assert_eq!(tid, &transaction_id);
     let (msg, _) = decoder.decode(packet).expect("Failed to decode message");
     check_attributes(Some(Integrity::MessageIntegrity), msg.attributes());
     assert_eq!(&transaction_id, msg.transaction_id());
@@ -525,10 +532,11 @@ fn test_stun_client_picks_cred_mech() {
         .expect("Failed to create request");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
+    let StuntClientEvent::OutputPacket((tid, packet)) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
     let (msg, _) = decoder.decode(packet).expect("Failed to decode message");
+    assert_eq!(tid, &transaction_id);
     check_attributes(None, msg.attributes());
     assert_eq!(&transaction_id, msg.transaction_id());
     let StuntClientEvent::RestransmissionTimeOut((id, _)) = iter.next().expect("Expected event")
@@ -573,9 +581,10 @@ fn test_stun_client_picks_cred_mech() {
         .expect("Failed to create request");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
+    let StuntClientEvent::OutputPacket((tid, packet)) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
+    assert_eq!(tid, &transaction_id);
     let (msg, _) = decoder.decode(packet).expect("Failed to decode message");
     assert_eq!(&transaction_id, msg.transaction_id());
     let StuntClientEvent::RestransmissionTimeOut((id, _)) = iter.next().expect("Expected event")

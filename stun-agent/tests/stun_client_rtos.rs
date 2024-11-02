@@ -64,9 +64,10 @@ fn test_rto_after_duration(
     client.on_timeout(instant);
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(buffer) = iter.next().expect("Expected event") else {
+    let StuntClientEvent::OutputPacket((tid, buffer)) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
+    assert_eq!(msg_id, tid);
     let (msg, _) = decoder.decode(buffer).expect("Failed to decode message");
     assert_eq!(msg_id, msg.transaction_id());
     let StuntClientEvent::RestransmissionTimeOut((id, timeout)) =
@@ -88,11 +89,12 @@ fn test_all_rtos(client: &mut StunClient, decoder: &MessageDecoder) {
         .expect("Failed to create indication");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(buffer) = iter.next().expect("Expected event") else {
+    let StuntClientEvent::OutputPacket((tid, buffer)) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
     let (msg, _) = decoder.decode(buffer).expect("Failed to decode message");
     let msg_id = msg.transaction_id();
+    assert_eq!(tid, msg_id);
     let StuntClientEvent::RestransmissionTimeOut((id, duration)) =
         iter.next().expect("Expected event")
     else {
@@ -207,11 +209,12 @@ fn test_stun_client_no_reliable_skip_intermediate_rtos_on_delayed_call() {
         .expect("Failed to create indication");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(buffer) = iter.next().expect("Expected event") else {
+    let StuntClientEvent::OutputPacket((tid, buffer)) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
     let (msg, _) = decoder.decode(buffer).expect("Failed to decode message");
     let msg_id = msg.transaction_id();
+    assert_eq!(tid, msg_id);
     let StuntClientEvent::RestransmissionTimeOut((id, duration)) =
         iter.next().expect("Expected event")
     else {

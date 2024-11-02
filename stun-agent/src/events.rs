@@ -8,7 +8,7 @@ use stun_rs::{StunMessage, TransactionId};
 #[derive(Debug)]
 pub enum StuntClientEvent {
     /// Notification used by the STUN client to send a STUN packet to the server
-    OutputPacket(StunPacket),
+    OutputPacket((TransactionId, StunPacket)),
     /// This event sets a timeout for a transaction identified by the [`TransactionId`].
     /// Once the timeout is reached, the client must call the [`on_timeout`](`crate::StunClient::on_timeout`) method on
     /// the [`StunClient`](`crate::StunClient`) instance.

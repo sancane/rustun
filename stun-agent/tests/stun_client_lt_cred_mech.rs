@@ -130,9 +130,10 @@ fn create_decoder(key: Option<HMACKey>) -> MessageDecoder {
 fn check_first_request(client: &mut StunClient, transaction_id: &TransactionId) {
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
+    let StuntClientEvent::OutputPacket((tid, packet)) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
+    assert_eq!(transaction_id, tid);
     let decoder = create_decoder(None);
     let (msg, _) = decoder.decode(packet).expect("Failed to decode message");
     // No attributes must be set for the first request
@@ -225,9 +226,11 @@ fn check_request_from_unauthenticated_error(
 ) {
     let events = client.events();
     let mut events_iter = events.iter();
-    let StuntClientEvent::OutputPacket(packet) = events_iter.next().expect("Expected event") else {
+    let StuntClientEvent::OutputPacket((tid, packet)) = events_iter.next().expect("Expected event")
+    else {
         panic!("Expected OutputBuffer event");
     };
+    assert_eq!(transaction_id, tid);
     let decoder = create_decoder(None);
     let (msg, _) = decoder.decode(packet).expect("Failed to decode message");
     // There must be authentication parameters
@@ -266,9 +269,11 @@ fn check_request_from_stale_nonce_error(
 ) {
     let events = client.events();
     let mut events_iter = events.iter();
-    let StuntClientEvent::OutputPacket(packet) = events_iter.next().expect("Expected event") else {
+    let StuntClientEvent::OutputPacket((tid, packet)) = events_iter.next().expect("Expected event")
+    else {
         panic!("Expected OutputBuffer event");
     };
+    assert_eq!(transaction_id, tid);
     let decoder = create_decoder(None);
     let (msg, _) = decoder.decode(packet).expect("Failed to decode message");
     // There must be authentication parameters
@@ -316,9 +321,11 @@ fn check_subsequent_request(
 ) {
     let events = client.events();
     let mut events_iter = events.iter();
-    let StuntClientEvent::OutputPacket(packet) = events_iter.next().expect("Expected event") else {
+    let StuntClientEvent::OutputPacket((tid, packet)) = events_iter.next().expect("Expected event")
+    else {
         panic!("Expected OutputBuffer event");
     };
+    assert_eq!(transaction_id, tid);
     let decoder = create_decoder(None);
     let (msg, _) = decoder.decode(packet).expect("Failed to decode message");
     // There must be authentication parameters
