@@ -1,5 +1,6 @@
 use crate::StunPacket;
 use log::warn;
+use std::collections::VecDeque;
 use std::time::Duration;
 use stun_rs::{StunMessage, TransactionId};
 
@@ -40,18 +41,18 @@ pub enum StunTransactionError {
 
 #[derive(Debug, Default)]
 pub struct TransactionEventHandler {
-    events: Vec<StuntClientEvent>,
+    events: VecDeque<StuntClientEvent>,
 }
 
 impl TransactionEventHandler {
     pub fn init(&mut self) -> TransactionEvents {
         TransactionEvents {
             handler: self,
-            events: Vec::new(),
+            events: VecDeque::new(),
         }
     }
 
-    pub fn events(&mut self) -> Vec<StuntClientEvent> {
+    pub fn events(&mut self) -> VecDeque<StuntClientEvent> {
         std::mem::take(&mut self.events)
     }
 }
@@ -59,12 +60,12 @@ impl TransactionEventHandler {
 #[derive(Debug)]
 pub struct TransactionEvents<'a> {
     handler: &'a mut TransactionEventHandler,
-    events: Vec<StuntClientEvent>,
+    events: VecDeque<StuntClientEvent>,
 }
 
 impl TransactionEvents<'_> {
     pub fn push(&mut self, event: StuntClientEvent) {
-        self.events.push(event);
+        self.events.push_back(event);
     }
 }
 

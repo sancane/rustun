@@ -8,7 +8,7 @@ use crate::st_cred_mech::ShortTermCredentialClient;
 use crate::timeout::{RtoManager, StunMessageTimeout, DEFAULT_RC, DEFAULT_RM, DEFAULT_RTO};
 use crate::{CredentialMechanism, StunAgentError, StunPacket};
 use log::{debug, info, warn};
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use std::time::{Duration, Instant};
 use stun_rs::attributes::stun::UserName;
 use stun_rs::error::StunEncodeError;
@@ -963,7 +963,7 @@ impl StunClient {
     /// Therefore, the user should call this method to retrieve the events as
     /// soon as an operation is completed. Otherwise, the events may be lost
     /// if a new operation is performed.
-    pub fn events(&mut self) -> Vec<StuntClientEvent> {
+    pub fn events(&mut self) -> VecDeque<StuntClientEvent> {
         self.transaction_events.events()
     }
 }
