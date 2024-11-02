@@ -1,36 +1,19 @@
 use std::collections::HashMap;
-use std::future::Future;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 use stun_agent::{
     StunAgentError, StunAttributes, StunClient, StunPacket, StunTransactionError, StuntClientEvent,
 };
 use stun_rs::{MessageClass, MessageMethod, StunMessage, TransactionId};
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::{mpsc, oneshot, Notify};
 use tokio::task::JoinHandle;
-
-struct SendStunPacketMessage {
-    packet: StunPacket,
-    tx: oneshot::Sender<bool>,
-}
-
-struct SetTimeoutMessage {
-    instant: Instant,
-    duration: Duration,
-    tx: oneshot::Sender<bool>,
-}
-
-pub enum StuntClientEventMessages {
-    SendStunPacket(SendStunPacketMessage),
-    SetTimeout(SetTimeoutMessage),
-}
 
 type StuntClientResult = Result<Option<StunMessage>, StunClientError>;
 type StunClientTx = oneshot::Sender<StuntClientResult>;
 
-trait StunClientEventsHandler {
-    fn set_timeout(&self);
-    fn send_packet(&self);
+pub trait StunClientHandler {
+    fn now(&self) -> Instant;
+    fn send_stun_packet(&self);
 }
 
 #[derive(Debug)]
@@ -60,27 +43,65 @@ enum StuntClientRequestMessages {
     ProcessRecvBuffer(OnBufferMessage),
 }
 
-struct StuntClientActor {
+struct TimeoutHandler {
+    tid: TransactionId,
+    task: JoinHandle<()>,
+}
+struct StuntClientActor<T: StunClientHandler> {
     client: StunClient,
+    handler: T,
+    on_timeout: Arc<Notify>,
     rx: mpsc::Receiver<StuntClientRequestMessages>,
-    timeout: Option<TransactionId>,
+    timeout: Option<TimeoutHandler>,
     transactions: HashMap<TransactionId, StunClientTx>,
-    tx: mpsc::Sender<StuntClientEventMessages>,
 }
 
-impl StuntClientActor {
+impl<T: StunClientHandler> StuntClientActor<T> {
     pub fn new(
         client: StunClient,
+        handler: T,
         rx: mpsc::Receiver<StuntClientRequestMessages>,
-        tx: mpsc::Sender<StuntClientEventMessages>,
     ) -> Self {
         StuntClientActor {
             client,
+            handler,
+            on_timeout: Arc::new(Notify::new()),
             rx,
             timeout: None,
             transactions: HashMap::new(),
-            tx,
         }
+    }
+
+    async fn send_packet(&mut self, tid: TransactionId, packet: StunPacket) {
+        // TODO:
+    }
+
+    fn abort_timeout(&mut self) {
+        if let Some(handler) = self.timeout.take() {
+            // Cancel previous timeout
+            handler.task.abort();
+        }
+    }
+
+    async fn set_timeout(&mut self, tid: TransactionId, duration: Duration) {
+        if let Some(handler) = self.timeout.as_ref() {
+            if handler.tid == tid {
+                // The timeout is already set for the same transaction
+                return;
+            }
+        }
+
+        self.abort_timeout();
+        println!("Setting new timeout for {tid} of {:?}", duration);
+
+        let notify = self.on_timeout.clone();
+        self.timeout = Some(TimeoutHandler {
+            tid,
+            task: tokio::spawn(async move {
+                tokio::time::sleep(duration).await;
+                notify.notify_one();
+            }),
+        });
     }
 
     fn response(&mut self, tid: &TransactionId, result: StuntClientResult) {
@@ -91,69 +112,11 @@ impl StuntClientActor {
         }
     }
 
-    async fn send_packet(&mut self, packet: StunPacket) {
-        let (tx, rx) = oneshot::channel();
-        let msg = SendStunPacketMessage { packet, tx };
-        if let Err(e) = self
-            .tx
-            .send(StuntClientEventMessages::SendStunPacket(msg))
-            .await
-        {
-            // TODO: Debug error
-        } else {
-            match rx.await {
-                Ok(true) => {
-                    // TODO: Debug no packet sent
-                }
-                Ok(false) => {
-                    // TODO: Debug no packet sent
-                }
-                Err(e) => {
-                    // TODO: Debug no packet sent
-                }
-            }
-        }
-    }
-
-    async fn set_timeout(&mut self, tid: TransactionId, duration: Duration) {
-        if let Some(t) = &self.timeout {
-            if t == &tid {
-                // Timeout already scheduled
-                return;
-            }
-        }
-        let (tx, rx) = oneshot::channel();
-        let msg = SetTimeoutMessage {
-            instant: Instant::now(),
-            duration,
-            tx,
-        };
-        if let Err(e) = self
-            .tx
-            .send(StuntClientEventMessages::SetTimeout(msg))
-            .await
-        {
-            // TODO: Debug error
-        } else {
-            match rx.await {
-                Ok(true) => self.timeout = Some(tid.clone()),
-                Ok(false) => {
-                    // TODO: Debug no timeout set
-                }
-                Err(e) => {
-                    // TODO: Debug no timeout set
-                }
-            }
-        }
-    }
-
     async fn process_events(&mut self) {
         let mut events = self.client.events();
-        while !events.is_empty() {
-            // TODO: Change this to VecDeque so that there is no reallocation
-            let event = events.remove(0);
+        while let Some(event) = events.pop_front() {
             match event {
-                StuntClientEvent::OutputPacket(packet) => self.send_packet(packet).await,
+                StuntClientEvent::OutputPacket((tid, packet)) => self.send_packet(tid, packet).await,
                 StuntClientEvent::RestransmissionTimeOut((tid, duration)) => {
                     self.set_timeout(tid, duration).await
                 }
@@ -178,7 +141,7 @@ impl StuntClientActor {
     fn send_request(&mut self, msg: SendStunMessage) {
         match self
             .client
-            .send_request(msg.method, msg.attributes, msg.buffer, Instant::now())
+            .send_request(msg.method, msg.attributes, msg.buffer, self.handler.now())
         {
             Ok(tid) => {
                 self.transactions.insert(tid, msg.tx);
@@ -221,29 +184,44 @@ impl StuntClientActor {
         self.process_events().await;
     }
 
+    async fn on_timeout(&mut self) {
+        self.abort_timeout();
+        self.client.on_timeout(self.handler.now());
+        self.process_events().await;
+    }
+
     pub async fn main_loop(&mut self) {
         loop {
-            match self.rx.recv().await {
-                Some(StuntClientRequestMessages::SendStunMessage(msg)) => {
-                    self.send_message(msg).await;
+            tokio::select! {
+                _ = self.on_timeout.notified() => {
+                    println!("Timeout!!");
+                    self.on_timeout().await;
                 }
-                Some(StuntClientRequestMessages::ProcessRecvBuffer(msg)) => {
-                    self.process_buffer_recv(msg).await;
-                }
-                None => {
-                    break;
+                value = self.rx.recv() => {
+                    match value {
+                        Some(StuntClientRequestMessages::SendStunMessage(msg)) => {
+                            self.send_message(msg).await;
+                        }
+                        Some(StuntClientRequestMessages::ProcessRecvBuffer(msg)) => {
+                            self.process_buffer_recv(msg).await;
+                        }
+                        None => {
+                            break;
+                        }
+                    }
                 }
             }
         }
+        println!("Client actor finished");
     }
 }
 
-fn spawn_stun_client_actor(
+fn spawn_stun_client_actor<T: StunClientHandler + Send + 'static>(
     client: StunClient,
+    handler: T,
     rx: mpsc::Receiver<StuntClientRequestMessages>,
-    tx: mpsc::Sender<StuntClientEventMessages>,
 ) -> JoinHandle<()> {
-    let mut actor = StuntClientActor::new(client, rx, tx);
+    let mut actor = StuntClientActor::new(client, handler, rx);
 
     tokio::spawn(async move {
         actor.main_loop().await;
@@ -251,16 +229,16 @@ fn spawn_stun_client_actor(
 }
 
 #[derive(Clone)]
-struct StuntClient {
+pub struct StuntClientAgent {
     handler: Arc<JoinHandle<()>>,
     tx_req: mpsc::Sender<StuntClientRequestMessages>,
 }
 
-impl StuntClient {
-    pub fn new(client: StunClient, tx_evt: mpsc::Sender<StuntClientEventMessages>) -> Self {
+impl StuntClientAgent {
+    pub fn new<T: StunClientHandler + Send + 'static>(client: StunClient, handler: T) -> Self {
         let (tx_req, rx_req) = mpsc::channel(10);
-        let handler = spawn_stun_client_actor(client, rx_req, tx_evt);
-        StuntClient {
+        let handler = spawn_stun_client_actor(client, handler, rx_req);
+        StuntClientAgent {
             handler: Arc::new(handler),
             tx_req,
         }
@@ -299,7 +277,7 @@ impl StuntClient {
             .await
     }
 
-    pub async fn send_indicationt(
+    pub async fn send_indication(
         &self,
         method: MessageMethod,
         attributes: StunAttributes,
@@ -308,12 +286,4 @@ impl StuntClient {
         self.send_msg(MessageClass::Indication, method, attributes, buffer)
             .await
     }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {}
 }

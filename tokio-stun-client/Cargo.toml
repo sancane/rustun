@@ -16,3 +16,6 @@ edition = "2021"
 stun-agent = { path = "../stun-agent" }
 stun-rs = { path = "../stun-rs" }
 tokio = { version = "1.41.0", features = ["full"] }
+
+[dev-dependencies]
+futures = "0.3.31"
