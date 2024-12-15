@@ -46,7 +46,7 @@ impl<'a> TryFrom<&'a [u8; MESSAGE_HEADER_SIZE]> for MessageHeader<'a> {
     }
 }
 
-impl<'a> PartialEq for MessageHeader<'a> {
+impl PartialEq for MessageHeader<'_> {
     fn eq(&self, other: &Self) -> bool {
         self.msg_type == other.msg_type
             && self.msg_length == other.msg_length
@@ -55,7 +55,7 @@ impl<'a> PartialEq for MessageHeader<'a> {
     }
 }
 
-impl<'a> Eq for MessageHeader<'a> {}
+impl Eq for MessageHeader<'_> {}
 
 impl<'a> Decode<'a> for MessageHeader<'a> {
     fn decode(buffer: &'a [u8]) -> Result<(Self, usize), StunError> {
@@ -108,7 +108,7 @@ pub struct RawMessage<'a> {
     pub attributes: &'a [u8],
 }
 
-impl<'a> PartialEq for RawMessage<'a> {
+impl PartialEq for RawMessage<'_> {
     fn eq(&self, other: &Self) -> bool {
         if self.header != other.header {
             return false;
@@ -125,7 +125,7 @@ impl<'a> PartialEq for RawMessage<'a> {
     }
 }
 
-impl<'a> Eq for RawMessage<'a> {}
+impl Eq for RawMessage<'_> {}
 
 impl<'a> Decode<'a> for RawMessage<'a> {
     fn decode(buffer: &'a [u8]) -> Result<(Self, usize), StunError> {
@@ -188,7 +188,7 @@ pub struct RawAttributesIter<'a> {
     pos: usize,
 }
 
-impl<'a> RawAttributesIter<'a> {
+impl RawAttributesIter<'_> {
     pub fn pos(&self) -> usize {
         self.pos
     }

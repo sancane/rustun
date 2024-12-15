@@ -26,7 +26,7 @@ fn encoded_size_(addr: &SocketAddr) -> usize {
     4 + ip_size
 }
 
-impl<'a> Decode<'a> for SocketAddr {
+impl Decode<'_> for SocketAddr {
     fn decode(buffer: &[u8]) -> Result<(Self, usize), StunError> {
         let mut size = 4;
         check_buffer_boundaries(buffer, size)?;
