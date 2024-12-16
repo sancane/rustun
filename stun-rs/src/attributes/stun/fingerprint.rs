@@ -26,7 +26,7 @@ impl DecodableFingerprint {
     }
 }
 
-impl<'a> crate::Decode<'a> for DecodableFingerprint {
+impl crate::Decode<'_> for DecodableFingerprint {
     fn decode(buffer: &[u8]) -> Result<(Self, usize), StunError> {
         let (value, _) = u32::decode(buffer)?;
         let crc32 = value ^ FINGERPRINT_XOR_VALUE;

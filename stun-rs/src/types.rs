@@ -310,7 +310,7 @@ impl TryFrom<u8> for AddressFamily {
     }
 }
 
-impl<'a> crate::Decode<'a> for AddressFamily {
+impl crate::Decode<'_> for AddressFamily {
     fn decode(raw_value: &[u8]) -> Result<(Self, usize), StunError> {
         check_buffer_boundaries(raw_value, ADDRESS_FAMILY_SIZE)?;
         Ok((AddressFamily::try_from(raw_value[0])?, ADDRESS_FAMILY_SIZE))
@@ -420,7 +420,7 @@ impl ErrorCode {
 // |      Reason Phrase (variable)                                ..
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 
-impl<'a> crate::Decode<'a> for ErrorCode {
+impl crate::Decode<'_> for ErrorCode {
     fn decode(raw_value: &[u8]) -> Result<(Self, usize), StunError> {
         check_buffer_boundaries(raw_value, 4)?;
 

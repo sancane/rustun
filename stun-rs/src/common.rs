@@ -33,7 +33,7 @@ const U64_SIZE: usize = 8;
 const U32_SIZE: usize = 4;
 const U16_SIZE: usize = 2;
 
-impl<'a> crate::Decode<'a> for u64 {
+impl crate::Decode<'_> for u64 {
     fn decode(raw_value: &[u8]) -> Result<(Self, usize), StunError> {
         check_buffer_boundaries(raw_value, U64_SIZE)?;
         let value = BigEndian::read_u64(&raw_value[..U64_SIZE]);
@@ -49,7 +49,7 @@ impl Encode for u64 {
     }
 }
 
-impl<'a> crate::Decode<'a> for u32 {
+impl crate::Decode<'_> for u32 {
     fn decode(raw_value: &[u8]) -> Result<(Self, usize), StunError> {
         check_buffer_boundaries(raw_value, U32_SIZE)?;
         let value = BigEndian::read_u32(&raw_value[..U32_SIZE]);
@@ -65,7 +65,7 @@ impl Encode for u32 {
     }
 }
 
-impl<'a> crate::Decode<'a> for u16 {
+impl crate::Decode<'_> for u16 {
     fn decode(raw_value: &[u8]) -> Result<(Self, usize), StunError> {
         check_buffer_boundaries(raw_value, U16_SIZE)?;
         let value = BigEndian::read_u16(&raw_value[..U16_SIZE]);
