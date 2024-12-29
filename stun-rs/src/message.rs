@@ -463,12 +463,12 @@ mod tests {
         let cls = MessageClass::Request;
         let method = MessageMethod::try_from(0x0001).expect("Can not create MessageMethod");
         let msg_type = MessageType::new(method, cls);
-        format!("{:?}", msg_type);
+        let _val = format!("{:?}", msg_type);
 
         let builder = StunMessageBuilder::new(BINDING, MessageClass::Request);
-        format!("{:?}", builder);
+        let _val = format!("{:?}", builder);
 
         let msg = builder.build();
-        format!("{:?}", msg);
+        let _val = format!("{:?}", msg);
     }
 }

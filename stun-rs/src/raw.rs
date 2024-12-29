@@ -443,11 +443,11 @@ mod tests {
         let buffer = [];
         let raw_attr = RawAttributes::from(&buffer[..]);
         // check debug is implemented
-        format!("{:?}", raw_attr);
+        let _val = format!("{:?}", raw_attr);
 
         let mut iter = raw_attr.into_fallible_iter();
         // check debug is implemented
-        format!("{:?}", iter);
+        let _val = format!("{:?}", iter);
 
         assert_eq!(iter.next(), Ok(None));
 
@@ -631,7 +631,7 @@ mod tests {
             &[0xb7, 0xe7, 0xa7, 0x01, 0xbc, 0x34, 0xd6, 0x86, 0xfa, 0x87, 0xdf, 0xae]
         );
 
-        format!("{:?}", header);
+        let _val = format!("{:?}", header);
 
         let (header2, _size) = MessageHeader::decode(&stun_vectors::SAMPLE_REQUEST)
             .expect("Can not parse STUN header");
@@ -649,7 +649,7 @@ mod tests {
             RawMessage::decode(&stun_vectors::SAMPLE_REQUEST).expect("Can not parse STUN message");
         assert_eq!(size, stun_vectors::SAMPLE_REQUEST.len());
 
-        format!("{:?}", raw_msg1);
+        let _val = format!("{:?}", raw_msg1);
 
         let (raw_msg2, size) = RawMessage::decode(&stun_vectors::SAMPLE_REQUEST_LONG_TERM_AUTH)
             .expect("Can not parse STUN message");
