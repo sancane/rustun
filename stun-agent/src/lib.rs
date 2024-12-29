@@ -133,9 +133,9 @@ pub struct StunPacketDecoder {
 
 /// Describes the possible outcomes of the STUN packet decoding.
 /// - If the STUN packet has been fully decoded, the method returns the decoded STUN packet
-/// and the number of bytes consumed.
+///   and the number of bytes consumed.
 /// - If the STUN packet has not been fully decoded, the method returns the decoder and the
-/// number of bytes still needed to complete the STUN packet, if known.
+///   number of bytes still needed to complete the STUN packet, if known.
 #[derive(Debug)]
 pub enum StunPacketDecodedValue {
     /// Returns the decoded STUN packet and the number of bytes consumed from the input.
@@ -189,13 +189,13 @@ impl StunPacketDecoder {
     /// Decodes the given data and returns the decoded STUN packet. This method takes the data
     /// read so far as an argument and returns one of the following outcomes:
     /// - If the STUN packet has been fully decoded, the method returns the decoded STUN packet
-    /// and the number of bytes consumed.
+    ///   and the number of bytes consumed.
     /// - If the STUN packet has not been fully decoded, the method returns the decoder and the
-    /// number of bytes still needed to complete the STUN packet, if known.
+    ///   number of bytes still needed to complete the STUN packet, if known.
     /// - If the buffer is too small or the header does not correspond to a STUN message, the
-    /// method returns an error.
-    /// Note: This method does not perform a full validation of the STUN message; it only checks
-    /// the header. Integrity checks and other validations will be performed by the STUN agent.
+    ///   method returns an error.
+    ///   Note: This method does not perform a full validation of the STUN message; it only checks
+    ///   the header. Integrity checks and other validations will be performed by the STUN agent.
     pub fn decode(mut self, data: &[u8]) -> Result<StunPacketDecodedValue, StunPacketDecodedError> {
         match self.expected_size {
             Some(size) => {

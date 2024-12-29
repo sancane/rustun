@@ -264,13 +264,13 @@ impl From<TransportReliability> for StunRttCalcuator {
 /// abstraction imposes certain guidelines to ensure the protocol's proper functioning.
 /// Consequently, users must consider the following technical aspects:
 /// - The controller must capture and handle any events that the client may generate after
-/// interacting with the library.
+///   interacting with the library.
 /// - The controller must handle the input and output buffers that the client will use to send and
-/// receive data from the server.
+///   receive data from the server.
 /// - Timing management falls under the controller's jurisdiction, as the client lacks internal
-/// time-handling mechanisms. The controller must define transaction timeouts and inform the client
-/// upon their expiration. For supporting timed events, the API exposes an [`Instant`] parameter
-/// to the controller, facilitating specification of event occurrence times.
+///   time-handling mechanisms. The controller must define transaction timeouts and inform the client
+///   upon their expiration. For supporting timed events, the API exposes an [`Instant`] parameter
+///   to the controller, facilitating specification of event occurrence times.
 ///
 /// # Design considerations
 ///

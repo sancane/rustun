@@ -195,7 +195,7 @@ mod tests {
             .expect("Can not get input buffer");
 
         let fingerprint = Fingerprint::from([0xc0, 0x7d, 0x4c, 0x96]);
-        format!("{:?}", fingerprint);
+        let _val = format!("{:?}", fingerprint);
 
         assert!(fingerprint.validate(&input));
 

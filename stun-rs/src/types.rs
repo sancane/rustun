@@ -686,8 +686,8 @@ mod transaction_id_tests {
         let slice: &[u8] = &tr3;
         assert_eq!(slice, tr3.as_bytes());
 
-        format!("{}", tr1);
-        format!("{:?}", tr1);
+        let _val = format!("{}", tr1);
+        let _val = format!("{:?}", tr1);
     }
 
     #[test]

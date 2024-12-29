@@ -148,7 +148,7 @@ mod tests {
         ];
 
         let attr = MessageIntegrity::from(&hmac_hash);
-        format!("{:?}", attr);
+        let _val = format!("{:?}", attr);
 
         let password = "VOkJxbRl1RmTxUk/WvJxBt";
         let key = HMACKey::new_short_term(password).expect("Could not create HMACKey");
@@ -166,7 +166,7 @@ mod tests {
         ];
 
         let attr = MessageIntegrity::from(&hmac_hash);
-        format!("{:?}", attr);
+        let _val = format!("{:?}", attr);
 
         // Validation fail without key
         let ctx = DecoderContextBuilder::default().build();
