@@ -344,8 +344,8 @@ impl EncoderContext {
             .map_or(DEFAULT_PADDING_VALUE, |padding| match padding {
                 StunPadding::Random => {
                     use rand::Rng;
-                    let mut rng = rand::thread_rng();
-                    rng.gen()
+                    let mut rng = rand::rng();
+                    rng.random()
                 }
                 StunPadding::Custom(v) => *v,
             })
