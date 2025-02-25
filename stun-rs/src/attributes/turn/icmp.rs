@@ -154,7 +154,7 @@ impl EncodeAttributeValue for Icmp {
         raw_value[..=1].fill(0);
         let icmp_type: u16 = self.icmp_type.into();
         let icmp_code: u16 = self.icmp_code.into();
-        let icmp: u16 = icmp_type << 9 | icmp_code;
+        let icmp: u16 = (icmp_type << 9) | icmp_code;
         icmp.encode(&mut raw_value[2..=3])?;
         raw_value[4..ICMP_SIZE].copy_from_slice(&self.error_data);
         Ok(ICMP_SIZE)

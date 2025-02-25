@@ -924,7 +924,7 @@ impl StunClient {
                         events.push(StuntClientEvent::OutputPacket(transaction.packet.clone()));
                     }
                     None => {
-                        let protection_violated = self.mechanism.as_mut().map_or(false, |m| {
+                        let protection_violated = self.mechanism.as_mut().is_some_and(|m| {
                             m.signal_protection_violated_on_timeout(&transaction_id)
                         });
                         let event = if protection_violated {

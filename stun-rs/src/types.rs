@@ -3,7 +3,7 @@ use crate::error::{StunError, StunErrorType};
 use crate::strings::opaque_string_enforce;
 use crate::{Algorithm, AlgorithmId, Encode};
 use byteorder::{BigEndian, ByteOrder};
-use rand::distributions::{Distribution, Standard};
+use rand::distr::{Distribution, StandardUniform};
 use rand::Rng;
 use std::convert::{TryFrom, TryInto};
 use std::fmt;
@@ -132,7 +132,7 @@ impl From<[u8; TRANSACTION_ID_SIZE]> for TransactionId {
     }
 }
 
-impl Distribution<TransactionId> for Standard {
+impl Distribution<TransactionId> for StandardUniform {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> TransactionId {
         let mut buffer = [0u8; TRANSACTION_ID_SIZE];
         rng.fill_bytes(&mut buffer);
@@ -143,8 +143,8 @@ impl Distribution<TransactionId> for Standard {
 impl Default for TransactionId {
     /// Creates a cryptographically random transaction ID chosen from the interval 0 .. 2**96-1.
     fn default() -> Self {
-        let mut rng = rand::thread_rng();
-        rng.gen()
+        let mut rng = rand::rng();
+        rng.random()
     }
 }
 

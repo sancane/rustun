@@ -56,11 +56,11 @@ impl MessageType {
 
     /// Returns the [`u16`] representation of this [`MessageType`]
     pub fn as_u16(&self) -> u16 {
-        (self.method.0 & 0x1F80) << 2
-            | (self.method.as_u16() & 0x0070) << 1
+        ((self.method.0 & 0x1F80) << 2)
+            | ((self.method.as_u16() & 0x0070) << 1)
             | (self.method.as_u16() & 0x000F)
-            | (self.class.as_u16() & 0x0002) << 7
-            | (self.class.as_u16() & 0x0001) << 4
+            | ((self.class.as_u16() & 0x0002) << 7)
+            | ((self.class.as_u16() & 0x0001) << 4)
     }
 }
 
@@ -70,12 +70,12 @@ impl From<u16> for MessageType {
         let val = value & 0x3FFF;
         // There is not way this can fail. Value gotten will always fit into a u8
         // and it will be less or equal to 0x0003
-        let class_u8: u8 = ((val & 0x0100) >> 7 | (val & 0x0010) >> 4)
+        let class_u8: u8 = (((val & 0x0100) >> 7) | ((val & 0x0010) >> 4))
             .try_into()
             .unwrap();
         let class = MessageClass::try_from(class_u8).unwrap();
         // There is not way that method number falls out of the range defined 0x000-0xFFF
-        let method_u16: u16 = (val & 0x3E00) >> 2 | (val & 0x00E0) >> 1 | (val & 0x000F);
+        let method_u16: u16 = ((val & 0x3E00) >> 2) | ((val & 0x00E0) >> 1) | (val & 0x000F);
         let method = MessageMethod::try_from(method_u16).unwrap();
 
         MessageType::new(method, class)
