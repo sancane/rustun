@@ -36,7 +36,7 @@ pub enum StunErrorInfo {
     /// A [`String`] describing the error,
     Text(String),
     /// Source of error
-    Error(Box<dyn error::Error>),
+    Error(Box<dyn error::Error + Sync + Send>),
 }
 
 impl fmt::Display for StunErrorInfo {
@@ -128,7 +128,10 @@ impl StunError {
         }
     }
 
-    pub(crate) fn from_error(error_type: StunErrorType, e: Box<dyn error::Error>) -> Self {
+    pub(crate) fn from_error(
+        error_type: StunErrorType,
+        e: Box<dyn error::Error + Sync + Send>,
+    ) -> Self {
         Self {
             error_type,
             info: StunErrorInfo::Error(e),
