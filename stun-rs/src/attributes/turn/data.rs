@@ -3,7 +3,7 @@ use crate::common::check_buffer_boundaries;
 use crate::context::{AttributeDecoderContext, AttributeEncoderContext};
 use crate::StunError;
 use std::ops::Deref;
-use std::rc::Rc;
+use std::sync::Arc;
 
 pub const DATA: u16 = 0x0013;
 
@@ -25,7 +25,7 @@ pub const DATA: u16 = 0x0013;
 /// assert_eq!(raw_data, attr.as_bytes());
 ///```
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
-pub struct Data(Rc<Vec<u8>>);
+pub struct Data(Arc<Vec<u8>>);
 
 impl Data {
     /// Creates a new `Data` attribute
@@ -33,7 +33,7 @@ impl Data {
     where
         T: AsRef<[u8]>,
     {
-        Self(Rc::new(buffer.as_ref().to_vec()))
+        Self(Arc::new(buffer.as_ref().to_vec()))
     }
 
     /// Gets the data carried by this attribute
@@ -64,14 +64,14 @@ impl From<&[u8]> for Data {
 
 impl From<Vec<u8>> for Data {
     fn from(buff: Vec<u8>) -> Self {
-        Self(Rc::new(buff))
+        Self(Arc::new(buff))
     }
 }
 
 impl DecodeAttributeValue for Data {
     fn decode(ctx: AttributeDecoderContext) -> Result<(Self, usize), StunError> {
         let raw_value = ctx.raw_value();
-        Ok((Self(Rc::new(raw_value.to_vec())), raw_value.len()))
+        Ok((Self(Arc::new(raw_value.to_vec())), raw_value.len()))
     }
 }
 

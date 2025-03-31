@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::attributes::{stunt_attribute, DecodeAttributeValue, EncodeAttributeValue};
 use crate::common::check_buffer_boundaries;
@@ -21,7 +21,7 @@ const MOBILITY_TICKET: u16 = 0x8030;
 /// assert_eq!(attr, [0x1, 0x2, 0x3, 0x4, 0x5]);
 ///```
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct MobilityTicket(Rc<Vec<u8>>);
+pub struct MobilityTicket(Arc<Vec<u8>>);
 
 impl MobilityTicket {
     /// Creates a new [`MobilityTicket`] attribute.
@@ -34,7 +34,7 @@ impl MobilityTicket {
         T: AsRef<[u8]>,
     {
         let vec = ticket.as_ref().to_vec();
-        Self(Rc::new(vec))
+        Self(Arc::new(vec))
     }
 
     /// Returns the value of the [`MobilityTicket`] attribute

@@ -5,7 +5,7 @@ use crate::error::{StunError, StunErrorType};
 use byteorder::{BigEndian, ByteOrder};
 use std::convert::From;
 use std::ops::Deref;
-use std::rc::Rc;
+use std::sync::Arc;
 
 const UNKNOWN_ATTRIBUTES: u16 = 0x000A;
 
@@ -34,7 +34,7 @@ const UNKNOWN_ATTRIBUTES: u16 = 0x000A;
 ///```
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct UnknownAttributes {
-    attrs: Rc<Vec<u16>>,
+    attrs: Arc<Vec<u16>>,
 }
 
 impl UnknownAttributes {
@@ -43,7 +43,7 @@ impl UnknownAttributes {
     /// - 'value' - Attribute type
     pub fn add(&mut self, value: u16) {
         if !self.attrs.contains(&value) {
-            Rc::make_mut(&mut self.attrs).push(value);
+            Arc::make_mut(&mut self.attrs).push(value);
         }
     }
 

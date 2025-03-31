@@ -3,7 +3,7 @@ use crate::attributes::{stunt_attribute, DecodeAttributeValue, EncodeAttributeVa
 use crate::common::{check_buffer_boundaries, fill_padding_value, padding};
 use crate::context::{AttributeDecoderContext, AttributeEncoderContext};
 use crate::StunError;
-use std::rc::Rc;
+use std::sync::Arc;
 
 //  0                   1                   2                   3
 //  0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -38,13 +38,13 @@ const PASSWORD_ALGORITHMS: u16 = 0x8002;
 ///```
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct PasswordAlgorithms {
-    algorithms: Rc<Vec<PasswordAlgorithm>>,
+    algorithms: Arc<Vec<PasswordAlgorithm>>,
 }
 
 impl PasswordAlgorithms {
     /// Adds a new password algorithm.
     pub fn add(&mut self, algorithm: PasswordAlgorithm) {
-        Rc::get_mut(&mut self.algorithms).unwrap().push(algorithm);
+        Arc::get_mut(&mut self.algorithms).unwrap().push(algorithm);
     }
 
     /// Return the array of password attributes
@@ -70,7 +70,7 @@ impl IntoIterator for PasswordAlgorithms {
 impl From<Vec<PasswordAlgorithm>> for PasswordAlgorithms {
     fn from(v: Vec<PasswordAlgorithm>) -> Self {
         Self {
-            algorithms: Rc::new(v),
+            algorithms: Arc::new(v),
         }
     }
 }

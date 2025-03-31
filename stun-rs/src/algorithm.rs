@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// [STUN Password Algorithms](https://datatracker.ietf.org/doc/html/rfc8489#section-18.5)
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
@@ -50,7 +50,7 @@ impl From<AlgorithmId> for u16 {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Algorithm {
     algorithm: AlgorithmId,
-    params: Option<Rc<Vec<u8>>>,
+    params: Option<Arc<Vec<u8>>>,
 }
 impl AsRef<Algorithm> for Algorithm {
     fn as_ref(&self) -> &Algorithm {
@@ -69,7 +69,7 @@ impl Algorithm {
     {
         Self {
             algorithm,
-            params: parameters.into().map(Vec::from).map(Rc::new),
+            params: parameters.into().map(Vec::from).map(Arc::new),
         }
     }
 

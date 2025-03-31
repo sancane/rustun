@@ -2,7 +2,7 @@ use crate::attributes::{AsVerifiable, EncodeAttributeValue, Verifiable};
 use crate::context::AttributeEncoderContext;
 use crate::error::{StunError, StunErrorType};
 use crate::{AttributeType, StunAttribute};
-use std::rc::Rc;
+use std::sync::Arc;
 
 /// Unknown attribute.
 /// This attribute is added to a decoded message when there is not a known handler
@@ -13,7 +13,7 @@ use std::rc::Rc;
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Unknown {
     attr_type: AttributeType,
-    attr_data: Option<Rc<Vec<u8>>>,
+    attr_data: Option<Arc<Vec<u8>>>,
 }
 
 impl Unknown {
@@ -23,7 +23,7 @@ impl Unknown {
     {
         Self {
             attr_type,
-            attr_data: data.into().map(Vec::from).map(Rc::new),
+            attr_data: data.into().map(Vec::from).map(Arc::new),
         }
     }
 
