@@ -3,7 +3,7 @@ use std::slice::Iter;
 use std::time::Duration;
 use stun_agent::{
     CredentialMechanism, Integrity, RttConfig, StunAgentError, StunAttributes, StunClient,
-    StunClienteBuilder, StunTransactionError, StuntClientEvent, TransportReliability,
+    StunClienteBuilder, StunTransactionError, StunClientEvent, TransportReliability,
 };
 use stun_rs::attributes::stun::nonce_cookie::StunSecurityFeatures;
 use stun_rs::attributes::stun::{
@@ -130,7 +130,7 @@ fn create_decoder(key: Option<HMACKey>) -> MessageDecoder {
 fn check_first_request(client: &mut StunClient, transaction_id: &TransactionId) {
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
+    let StunClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
     let decoder = create_decoder(None);
@@ -139,7 +139,7 @@ fn check_first_request(client: &mut StunClient, transaction_id: &TransactionId) 
     assert!(msg.attributes().is_empty());
 
     assert_eq!(transaction_id, msg.transaction_id());
-    let StuntClientEvent::RestransmissionTimeOut((id, _)) = iter.next().expect("Expected event")
+    let StunClientEvent::RestransmissionTimeOut((id, _)) = iter.next().expect("Expected event")
     else {
         panic!("Expected RestransmissionTimeOut event");
     };
@@ -225,7 +225,7 @@ fn check_request_from_unauthenticated_error(
 ) {
     let events = client.events();
     let mut events_iter = events.iter();
-    let StuntClientEvent::OutputPacket(packet) = events_iter.next().expect("Expected event") else {
+    let StunClientEvent::OutputPacket(packet) = events_iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
     let decoder = create_decoder(None);
@@ -238,7 +238,7 @@ fn check_request_from_unauthenticated_error(
     assert!(attr_iter.next().is_none());
 
     assert_eq!(transaction_id, msg.transaction_id());
-    let StuntClientEvent::RestransmissionTimeOut((id, _)) =
+    let StunClientEvent::RestransmissionTimeOut((id, _)) =
         events_iter.next().expect("Expected event")
     else {
         panic!("Expected RestransmissionTimeOut event");
@@ -266,7 +266,7 @@ fn check_request_from_stale_nonce_error(
 ) {
     let events = client.events();
     let mut events_iter = events.iter();
-    let StuntClientEvent::OutputPacket(packet) = events_iter.next().expect("Expected event") else {
+    let StunClientEvent::OutputPacket(packet) = events_iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
     let decoder = create_decoder(None);
@@ -287,7 +287,7 @@ fn check_request_from_stale_nonce_error(
     }
 
     assert_eq!(transaction_id, msg.transaction_id());
-    let StuntClientEvent::RestransmissionTimeOut((id, _)) =
+    let StunClientEvent::RestransmissionTimeOut((id, _)) =
         events_iter.next().expect("Expected event")
     else {
         panic!("Expected RestransmissionTimeOut event");
@@ -316,7 +316,7 @@ fn check_subsequent_request(
 ) {
     let events = client.events();
     let mut events_iter = events.iter();
-    let StuntClientEvent::OutputPacket(packet) = events_iter.next().expect("Expected event") else {
+    let StunClientEvent::OutputPacket(packet) = events_iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
     let decoder = create_decoder(None);
@@ -339,7 +339,7 @@ fn check_subsequent_request(
     assert!(attr_iter.next().is_none());
 
     assert_eq!(transaction_id, msg.transaction_id());
-    let StuntClientEvent::RestransmissionTimeOut((id, _)) =
+    let StunClientEvent::RestransmissionTimeOut((id, _)) =
         events_iter.next().expect("Expected event")
     else {
         panic!("Expected RestransmissionTimeOut event");
@@ -536,7 +536,7 @@ fn test_stun_client_authenticate_unreliable() {
         .expect("Failed to receive buffer");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::Retry(id) = iter.next().expect("Expected event") else {
+    let StunClientEvent::Retry(id) = iter.next().expect("Expected event") else {
         panic!("Expected StunMessageReceived event");
     };
     assert_eq!(&transaction_id, id);
@@ -569,7 +569,7 @@ fn test_stun_client_authenticate_unreliable() {
 
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::StunMessageReceived(msg) = iter.next().expect("Expected event") else {
+    let StunClientEvent::StunMessageReceived(msg) = iter.next().expect("Expected event") else {
         panic!("Expected StunMessageReceived event");
     };
     assert_eq!(&transaction_id, msg.transaction_id());
@@ -618,7 +618,7 @@ fn test_stun_client_stale_nonce_unreliable() {
         .expect("Failed to receive buffer");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::Retry(id) = iter.next().expect("Expected event") else {
+    let StunClientEvent::Retry(id) = iter.next().expect("Expected event") else {
         panic!("Expected StunMessageReceived event");
     };
     assert_eq!(&transaction_id, id);
@@ -647,7 +647,7 @@ fn test_stun_client_stale_nonce_unreliable() {
         .expect("Failed to receive buffer");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::Retry(id) = iter.next().expect("Expected event") else {
+    let StunClientEvent::Retry(id) = iter.next().expect("Expected event") else {
         panic!("Expected StunMessageReceived event");
     };
     assert_eq!(&transaction_id, id);
@@ -688,7 +688,7 @@ fn test_timeout(reliability: TransportReliability) {
     client.on_timeout(instant);
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::TransactionFailed((id, error)) = iter.next().expect("Expected event")
+    let StunClientEvent::TransactionFailed((id, error)) = iter.next().expect("Expected event")
     else {
         panic!("Expected TransactionFailed event");
     };
@@ -734,7 +734,7 @@ fn test_stun_client_protection_violated() {
         .expect("Failed to receive buffer");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::Retry(id) = iter.next().expect("Expected event") else {
+    let StunClientEvent::Retry(id) = iter.next().expect("Expected event") else {
         panic!("Expected StunMessageReceived event");
     };
     assert_eq!(&transaction_id, id);
@@ -778,7 +778,7 @@ fn test_stun_client_protection_violated() {
     client.on_timeout(instant);
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::TransactionFailed((id, error)) = iter.next().expect("Expected event")
+    let StunClientEvent::TransactionFailed((id, error)) = iter.next().expect("Expected event")
     else {
         panic!("Expected TransactionFailed event");
     };
@@ -816,7 +816,7 @@ fn test_stun_client_not_retryable_error() {
 
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::TransactionFailed((id, error)) = iter.next().expect("Expected event")
+    let StunClientEvent::TransactionFailed((id, error)) = iter.next().expect("Expected event")
     else {
         panic!("Expected TransactionFailed event");
     };

@@ -1,4 +1,4 @@
-use crate::events::{StunTransactionError, StuntClientEvent, TransactionEventHandler};
+use crate::events::{StunClientEvent, StunTransactionError, TransactionEventHandler};
 use crate::fingerprint::{add_fingerprint_attribute, validate_fingerprint};
 use crate::integrity::IntegrityError;
 use crate::lt_cred_mech::LongTermCredentialClient;
@@ -279,8 +279,8 @@ impl From<TransportReliability> for StunRttCalcuator {
 /// timers, or additional events. This foundational concept is illustrated in the following API:
 ///
 /// ```no_run
-/// # use stun_agent::StuntClientEvent;
-/// # fn handle_data(in_bytes: &[u8]) -> Vec<StuntClientEvent> { vec![] }
+/// # use stun_agent::StunClientEvent;
+/// # fn handle_data(in_bytes: &[u8]) -> Vec<StunClientEvent> { vec![] }
 /// # fn perform_action() -> Vec<u8> { vec![] }
 /// # let in_bytes = [];
 /// let events = handle_data(&in_bytes);
@@ -293,10 +293,10 @@ impl From<TransportReliability> for StunRttCalcuator {
 /// generate further events for the controller. This implementation could have been realized as follows:
 ///
 /// ```no_run
-/// # use stun_agent::StuntClientEvent;
+/// # use stun_agent::StunClientEvent;
 /// # use stun_agent::StunAgentError;
 /// fn handle_data(in_bytes: &[u8])
-///     -> Result<Vec<StuntClientEvent>, (StunAgentError, Vec<StuntClientEvent>)> {
+///     -> Result<Vec<StunClientEvent>, (StunAgentError, Vec<StunClientEvent>)> {
 ///    // Implementation
 /// #   Ok(vec![])
 /// }
@@ -308,10 +308,10 @@ impl From<TransportReliability> for StunRttCalcuator {
 /// success outcomes and the errors and resulting events in case of failure:
 ///
 /// ```no_run
-/// # use stun_agent::StuntClientEvent;
+/// # use stun_agent::StunClientEvent;
 /// # use stun_agent::StunAgentError;
-/// # fn handle_data(in_bytes: &[u8]) -> Result<Vec<StuntClientEvent>, (StunAgentError, Vec<StuntClientEvent>)> { Ok(vec![]) }
-/// # fn handle_events(events: Vec<StuntClientEvent>) {}
+/// # fn handle_data(in_bytes: &[u8]) -> Result<Vec<StunClientEvent>, (StunAgentError, Vec<StunClientEvent>)> { Ok(vec![]) }
+/// # fn handle_events(events: Vec<StunClientEvent>) {}
 /// # fn handle_error(error: StunAgentError) {}
 /// # let in_bytes = [];
 /// let response = handle_data(&in_bytes);
@@ -398,7 +398,7 @@ impl From<TransportReliability> for StunRttCalcuator {
 /// is not received within the designated timeout period, the client generates a timeout event, marking
 /// the transaction as failed. Timeouts are also employed to manage re-transmissions of requests sent
 /// over unreliable transports. When the client needs to set a timeout for a re-transmission, it generates
-/// a [`RestransmissionTimeOut`](`crate::StuntClientEvent::RestransmissionTimeOut`) event, which is then
+/// a [`RestransmissionTimeOut`](`crate::StunClientEvent::RestransmissionTimeOut`) event, which is then
 /// notified to the controller when the events are pulled.
 ///
 /// If multiple timeouts are scheduled, the client will only notify the controller of the most recent
@@ -420,7 +420,7 @@ impl From<TransportReliability> for StunRttCalcuator {
 /// BINDING indication to a STUN server.
 ///
 /// ```rust
-/// # use stun_agent::{RttConfig, StunAttributes, StunClienteBuilder, StuntClientEvent, TransportReliability};
+/// # use stun_agent::{RttConfig, StunAttributes, StunClienteBuilder, StunClientEvent, TransportReliability};
 /// # use stun_rs::methods::BINDING;
 /// # use std::time::Instant;
 ///
@@ -462,7 +462,7 @@ impl From<TransportReliability> for StunRttCalcuator {
 /// let mut iter = events.iter();
 ///
 /// // Next event already contains the buffer that needs to be send to the server.
-/// let StuntClientEvent::OutputPacket(buffer) = iter
+/// let StunClientEvent::OutputPacket(buffer) = iter
 ///     .next()
 ///     .expect("Expected event")
 /// else {
@@ -475,7 +475,7 @@ impl From<TransportReliability> for StunRttCalcuator {
 /// The response must arrive before the timeout is reached, otherwise the client will generate a timeout event
 /// and will mark the transaction as failed.
 /// ```rust
-/// # use stun_agent::{RttConfig, StunAttributes, StunClienteBuilder, StuntClientEvent, TransportReliability};
+/// # use stun_agent::{RttConfig, StunAttributes, StunClienteBuilder, StunClientEvent, TransportReliability};
 /// # use stun_rs::methods::BINDING;
 /// # use std::time::Instant;
 /// # let mut client = StunClienteBuilder::new(TransportReliability::Unreliable(RttConfig::default()))
@@ -499,7 +499,7 @@ impl From<TransportReliability> for StunRttCalcuator {
 /// assert_eq!(events.len(), 2);
 /// let mut iter = events.iter();
 /// // Next event already contains the buffer that needs to be send to the server.
-/// let StuntClientEvent::OutputPacket(buffer) = iter
+/// let StunClientEvent::OutputPacket(buffer) = iter
 ///     .next()
 ///     .expect("Expected event")
 /// else {
@@ -507,7 +507,7 @@ impl From<TransportReliability> for StunRttCalcuator {
 /// };
 /// // Next event indicates that the user must set a timeout for the transaction
 /// // identified by the transaction_id.
-/// let StuntClientEvent::RestransmissionTimeOut((id, duration)) = iter
+/// let StunClientEvent::RestransmissionTimeOut((id, duration)) = iter
 ///     .next()
 ///     .expect("Expected event")
 /// else {
@@ -532,13 +532,13 @@ impl From<TransportReliability> for StunRttCalcuator {
 /// let mut iter = events.iter();
 ///
 /// // Next event contains the buffer that needs to be retransmitted.
-/// let StuntClientEvent::OutputPacket(buffer) = iter
+/// let StunClientEvent::OutputPacket(buffer) = iter
 ///     .next()
 ///     .expect("Expected event")
 /// else {
 ///         panic!("Expected OutputBuffer event");
 /// };
-/// let StuntClientEvent::RestransmissionTimeOut((id, duration)) = iter
+/// let StunClientEvent::RestransmissionTimeOut((id, duration)) = iter
 ///     .next()
 ///     .expect("Expected event")
 /// else {
@@ -553,14 +553,14 @@ impl From<TransportReliability> for StunRttCalcuator {
 /// not set a different value, the default timeout is 39500 ms for both, reliable and not
 /// reliable transports. If the client has not received a response after that time, the client
 /// will consider the transaction to have timed out, and an event of type
-/// [`TransactionFailed`](crate::StuntClientEvent::TransactionFailed) will be generated the
+/// [`TransactionFailed`](crate::StunClientEvent::TransactionFailed) will be generated the
 /// next time that events were pulled with the error
 /// [`TimedOut`](crate::StunTransactionError::TimedOut) for the transaction.
 ///
 /// To finish, the next example shows how to handle buffers received from the server. Raw buffers will
 /// be processed by the client to generate events that can be pulled by the controller.
 ///```rust
-/// # use stun_agent::{RttConfig, StunAttributes, StunClienteBuilder, StuntClientEvent, TransportReliability};
+/// # use stun_agent::{RttConfig, StunAttributes, StunClienteBuilder, StunClientEvent, TransportReliability};
 /// # use stun_rs::methods::BINDING;
 /// # use std::time::Instant;
 /// # use stun_rs::MessageClass::Indication;
@@ -585,7 +585,7 @@ impl From<TransportReliability> for StunRttCalcuator {
 /// assert_eq!(events.len(), 1);
 ///
 /// let mut iter = events.iter();
-/// let StuntClientEvent::StunMessageReceived(msg) = iter
+/// let StunClientEvent::StunMessageReceived(msg) = iter
 ///     .next()
 ///     .expect("Expected event")
 /// else {
@@ -774,11 +774,11 @@ impl StunClient {
         self.transactions.insert(*msg.transaction_id(), transaction);
 
         let mut events = self.transaction_events.init();
-        events.push(StuntClientEvent::OutputPacket(packet));
+        events.push(StunClientEvent::OutputPacket(packet));
 
         // Add the most recent timout event if any
         if let Some((id, left)) = self.timeouts.next_timeout(instant) {
-            events.push(StuntClientEvent::RestransmissionTimeOut((id, left)));
+            events.push(StunClientEvent::RestransmissionTimeOut((id, left)));
         }
 
         Ok(*msg.transaction_id())
@@ -810,7 +810,7 @@ impl StunClient {
         })?;
 
         let mut events = self.transaction_events.init();
-        events.push(StuntClientEvent::OutputPacket(packet));
+        events.push(StunClientEvent::OutputPacket(packet));
 
         Ok(*msg.transaction_id())
     }
@@ -893,7 +893,7 @@ impl StunClient {
             }
             None => {
                 // Notify the user about the received message
-                events.push(StuntClientEvent::StunMessageReceived(msg));
+                events.push(StunClientEvent::StunMessageReceived(msg));
             }
         }
 
@@ -921,19 +921,19 @@ impl StunClient {
                         transaction.instant = None;
                         self.timeouts.add(instant, rto, transaction_id);
                         debug!("set timeout {:?} for transaction {:?}", rto, transaction_id);
-                        events.push(StuntClientEvent::OutputPacket(transaction.packet.clone()));
+                        events.push(StunClientEvent::OutputPacket(transaction.packet.clone()));
                     }
                     None => {
                         let protection_violated = self.mechanism.as_mut().is_some_and(|m| {
                             m.signal_protection_violated_on_timeout(&transaction_id)
                         });
                         let event = if protection_violated {
-                            StuntClientEvent::TransactionFailed((
+                            StunClientEvent::TransactionFailed((
                                 transaction_id,
                                 StunTransactionError::ProtectionViolated,
                             ))
                         } else {
-                            StuntClientEvent::TransactionFailed((
+                            StunClientEvent::TransactionFailed((
                                 transaction_id,
                                 StunTransactionError::TimedOut,
                             ))
@@ -952,7 +952,7 @@ impl StunClient {
 
         // Add the most recent timout event if any
         if let Some((id, left)) = self.timeouts.next_timeout(instant) {
-            events.push(StuntClientEvent::RestransmissionTimeOut((id, left)));
+            events.push(StunClientEvent::RestransmissionTimeOut((id, left)));
         }
     }
 
@@ -963,7 +963,7 @@ impl StunClient {
     /// Therefore, the user should call this method to retrieve the events as
     /// soon as an operation is completed. Otherwise, the events may be lost
     /// if a new operation is performed.
-    pub fn events(&mut self) -> Vec<StuntClientEvent> {
+    pub fn events(&mut self) -> Vec<StunClientEvent> {
         self.transaction_events.events()
     }
 }
@@ -971,14 +971,14 @@ impl StunClient {
 fn process_integrity_error(
     error: IntegrityError,
     transaction_id: &TransactionId,
-) -> Result<Option<StuntClientEvent>, StunAgentError> {
+) -> Result<Option<StunClientEvent>, StunAgentError> {
     match error {
-        IntegrityError::ProtectionViolated => Ok(Some(StuntClientEvent::TransactionFailed((
+        IntegrityError::ProtectionViolated => Ok(Some(StunClientEvent::TransactionFailed((
             *transaction_id,
             StunTransactionError::ProtectionViolated,
         )))),
-        IntegrityError::Retry => Ok(Some(StuntClientEvent::Retry(*transaction_id))),
-        IntegrityError::NotRetryable => Ok(Some(StuntClientEvent::TransactionFailed((
+        IntegrityError::Retry => Ok(Some(StunClientEvent::Retry(*transaction_id))),
+        IntegrityError::NotRetryable => Ok(Some(StunClientEvent::TransactionFailed((
             *transaction_id,
             StunTransactionError::DoNotRetry,
         )))),
