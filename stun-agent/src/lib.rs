@@ -21,6 +21,8 @@
 //! - [`StunClient`](`crate::StunClient`): The STUN client that sends STUN requests and indications to a STUN server.
 #![deny(missing_docs)]
 
+use std::error::Error;
+use std::fmt::Display;
 use std::{ops::Deref, slice::Iter, sync::Arc};
 
 use stun_rs::MessageHeader;
@@ -61,6 +63,30 @@ pub enum StunAgentError {
     /// Indicates that the STUN agent has detected an internal error, and the [`String`] contains the error message
     InternalError(String),
 }
+
+impl Display for StunAgentError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            StunAgentError::Discarded => write!(f, "STUN agent has discarded the buffer"),
+            StunAgentError::FingerPrintValidationFailed => {
+                write!(f, "STUN agent has received an invalid STUN packet")
+            }
+            StunAgentError::Ignored => write!(f, "STUN agent has ignored the operation"),
+            StunAgentError::MaxOutstandingRequestsReached => write!(
+                f,
+                "STUN agent has reached the maximum number of outstanding requests"
+            ),
+            StunAgentError::StunCheckFailed => {
+                write!(f, "STUN agent has received an invalid STUN packet")
+            }
+            StunAgentError::InternalError(msg) => {
+                write!(f, "STUN agent has detected an internal error: {}", msg)
+            }
+        }
+    }
+}
+
+impl Error for StunAgentError {}
 
 /// Describes the kind of integrity protection that can be used.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
