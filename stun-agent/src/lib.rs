@@ -42,7 +42,7 @@ pub use crate::client::StunClient;
 pub use crate::client::StunClienteBuilder;
 pub use crate::client::TransportReliability;
 pub use crate::events::StunTransactionError;
-pub use crate::events::StuntClientEvent;
+pub use crate::events::StunClientEvent;
 pub use crate::message::StunAttributes;
 
 /// Describes the error that can occur during the STUN agent operation.

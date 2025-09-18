@@ -2,7 +2,7 @@ use log::info;
 use std::time::{Duration, Instant};
 use stun_agent::{
     RttConfig, StunAgentError, StunAttributes, StunClient, StunClienteBuilder,
-    StunTransactionError, StuntClientEvent, TransportReliability,
+    StunTransactionError, StunClientEvent, TransportReliability,
 };
 use stun_rs::methods::BINDING;
 use stun_rs::MessageClass::SuccessResponse;
@@ -36,10 +36,10 @@ fn test_stun_client_no_reliable_first_rto() {
         .expect("Failed to create indication");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(_) = iter.next().expect("Expected event") else {
+    let StunClientEvent::OutputPacket(_) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
-    let StuntClientEvent::RestransmissionTimeOut((_, duration)) =
+    let StunClientEvent::RestransmissionTimeOut((_, duration)) =
         iter.next().expect("Expected event")
     else {
         panic!("Expected RestransmissionTimeOut event");
@@ -64,12 +64,12 @@ fn test_rto_after_duration(
     client.on_timeout(instant);
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(buffer) = iter.next().expect("Expected event") else {
+    let StunClientEvent::OutputPacket(buffer) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
     let (msg, _) = decoder.decode(buffer).expect("Failed to decode message");
     assert_eq!(msg_id, msg.transaction_id());
-    let StuntClientEvent::RestransmissionTimeOut((id, timeout)) =
+    let StunClientEvent::RestransmissionTimeOut((id, timeout)) =
         iter.next().expect("Expected event")
     else {
         panic!("Expected RestransmissionTimeOut event");
@@ -88,12 +88,12 @@ fn test_all_rtos(client: &mut StunClient, decoder: &MessageDecoder) {
         .expect("Failed to create indication");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(buffer) = iter.next().expect("Expected event") else {
+    let StunClientEvent::OutputPacket(buffer) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
     let (msg, _) = decoder.decode(buffer).expect("Failed to decode message");
     let msg_id = msg.transaction_id();
-    let StuntClientEvent::RestransmissionTimeOut((id, duration)) =
+    let StunClientEvent::RestransmissionTimeOut((id, duration)) =
         iter.next().expect("Expected event")
     else {
         panic!("Expected RestransmissionTimeOut event");
@@ -167,7 +167,7 @@ fn test_all_rtos(client: &mut StunClient, decoder: &MessageDecoder) {
     client.on_timeout(instant);
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::TransactionFailed((id, error)) = iter.next().expect("Expected event")
+    let StunClientEvent::TransactionFailed((id, error)) = iter.next().expect("Expected event")
     else {
         panic!("Expected TransactionFailed event");
     };
@@ -207,12 +207,12 @@ fn test_stun_client_no_reliable_skip_intermediate_rtos_on_delayed_call() {
         .expect("Failed to create indication");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(buffer) = iter.next().expect("Expected event") else {
+    let StunClientEvent::OutputPacket(buffer) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
     let (msg, _) = decoder.decode(buffer).expect("Failed to decode message");
     let msg_id = msg.transaction_id();
-    let StuntClientEvent::RestransmissionTimeOut((id, duration)) =
+    let StunClientEvent::RestransmissionTimeOut((id, duration)) =
         iter.next().expect("Expected event")
     else {
         panic!("Expected RestransmissionTimeOut event");
@@ -249,10 +249,10 @@ fn test_stun_client_no_reliable_rtt() {
         .expect("Failed to create indication");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(_) = iter.next().expect("Expected event") else {
+    let StunClientEvent::OutputPacket(_) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
-    let StuntClientEvent::RestransmissionTimeOut((id, duration)) =
+    let StunClientEvent::RestransmissionTimeOut((id, duration)) =
         iter.next().expect("Expected event")
     else {
         panic!("Expected RestransmissionTimeOut event");
@@ -278,7 +278,7 @@ fn test_stun_client_no_reliable_rtt() {
     // consume the events
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::StunMessageReceived(msg) = iter.next().expect("Expected event") else {
+    let StunClientEvent::StunMessageReceived(msg) = iter.next().expect("Expected event") else {
         panic!("Expected TransactionFinished event");
     };
     assert_eq!(msg.transaction_id(), id);
@@ -291,10 +291,10 @@ fn test_stun_client_no_reliable_rtt() {
         .expect("Failed to create indication");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(_) = iter.next().expect("Expected event") else {
+    let StunClientEvent::OutputPacket(_) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
-    let StuntClientEvent::RestransmissionTimeOut((_, duration)) =
+    let StunClientEvent::RestransmissionTimeOut((_, duration)) =
         iter.next().expect("Expected event")
     else {
         panic!("Expected RestransmissionTimeOut event");
@@ -320,10 +320,10 @@ fn test_stun_client_no_reliable_reset_rtt_after_10_mins() {
         .expect("Failed to create indication");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(_) = iter.next().expect("Expected event") else {
+    let StunClientEvent::OutputPacket(_) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
-    let StuntClientEvent::RestransmissionTimeOut((id, duration)) =
+    let StunClientEvent::RestransmissionTimeOut((id, duration)) =
         iter.next().expect("Expected event")
     else {
         panic!("Expected RestransmissionTimeOut event");
@@ -349,7 +349,7 @@ fn test_stun_client_no_reliable_reset_rtt_after_10_mins() {
     // consume the events
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::StunMessageReceived(msg) = iter.next().expect("Expected event") else {
+    let StunClientEvent::StunMessageReceived(msg) = iter.next().expect("Expected event") else {
         panic!("Expected TransactionFinished event");
     };
     assert_eq!(msg.transaction_id(), id);
@@ -363,10 +363,10 @@ fn test_stun_client_no_reliable_reset_rtt_after_10_mins() {
         .expect("Failed to create indication");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(_) = iter.next().expect("Expected event") else {
+    let StunClientEvent::OutputPacket(_) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
-    let StuntClientEvent::RestransmissionTimeOut((id, duration)) =
+    let StunClientEvent::RestransmissionTimeOut((id, duration)) =
         iter.next().expect("Expected event")
     else {
         panic!("Expected RestransmissionTimeOut event");
@@ -391,7 +391,7 @@ fn test_stun_client_no_reliable_reset_rtt_after_10_mins() {
     // consume the events
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::StunMessageReceived(msg) = iter.next().expect("Expected event") else {
+    let StunClientEvent::StunMessageReceived(msg) = iter.next().expect("Expected event") else {
         panic!("Expected TransactionFinished event");
     };
     assert_eq!(msg.transaction_id(), id);
@@ -406,10 +406,10 @@ fn test_stun_client_no_reliable_reset_rtt_after_10_mins() {
         .expect("Failed to create indication");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(_) = iter.next().expect("Expected event") else {
+    let StunClientEvent::OutputPacket(_) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
-    let StuntClientEvent::RestransmissionTimeOut((_, duration)) =
+    let StunClientEvent::RestransmissionTimeOut((_, duration)) =
         iter.next().expect("Expected event")
     else {
         panic!("Expected RestransmissionTimeOut event");
@@ -435,10 +435,10 @@ fn test_stun_client_reliable_rtt() {
         .expect("Failed to create indication");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(_) = iter.next().expect("Expected event") else {
+    let StunClientEvent::OutputPacket(_) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
-    let StuntClientEvent::RestransmissionTimeOut((_, duration)) =
+    let StunClientEvent::RestransmissionTimeOut((_, duration)) =
         iter.next().expect("Expected event")
     else {
         panic!("Expected RestransmissionTimeOut event");
@@ -451,7 +451,7 @@ fn test_stun_client_reliable_rtt() {
     client.on_timeout(instant);
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::TransactionFailed((_, error)) = iter.next().expect("Expected event")
+    let StunClientEvent::TransactionFailed((_, error)) = iter.next().expect("Expected event")
     else {
         panic!("Expected TransactionFailed event");
     };

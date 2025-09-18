@@ -1,7 +1,7 @@
 use std::time::{Duration, Instant};
 use stun_agent::{
     CredentialMechanism, RttConfig, StunAgentError, StunAttributes, StunClient, StunClienteBuilder,
-    StuntClientEvent, TransportReliability,
+    StunClientEvent, TransportReliability,
 };
 use stun_rs::attributes::stun::Software;
 use stun_rs::methods::BINDING;
@@ -92,11 +92,11 @@ fn test_stun_client_send_request() {
         .expect("Failed to create request");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
+    let StunClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
     let (msg, _) = decoder.decode(packet).expect("Failed to decode message");
-    let StuntClientEvent::RestransmissionTimeOut((id, _)) = iter.next().expect("Expected event")
+    let StunClientEvent::RestransmissionTimeOut((id, _)) = iter.next().expect("Expected event")
     else {
         panic!("Expected RestransmissionTimeOut event");
     };
@@ -171,10 +171,10 @@ fn test_stun_client_allow_send_request_after_max_request_error() {
     // consume the events
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(_) = iter.next().expect("Expected event") else {
+    let StunClientEvent::OutputPacket(_) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
-    let StuntClientEvent::RestransmissionTimeOut((id, _)) = iter.next().expect("Expected event")
+    let StunClientEvent::RestransmissionTimeOut((id, _)) = iter.next().expect("Expected event")
     else {
         panic!("Expected RestransmissionTimeOut event");
     };
@@ -228,7 +228,7 @@ fn test_stun_client_send_indication() {
         .expect("Failed to send indication");
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
+    let StunClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
     // No more events
@@ -281,7 +281,7 @@ fn test_stun_client_send_indications_after_send_max_requests() {
     assert_eq!(events.len(), 1);
 
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
+    let StunClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
     // No more events
@@ -364,7 +364,7 @@ fn test_stun_client_recv_indication() {
     // consume the events
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::StunMessageReceived(msg) = iter.next().expect("Expected event") else {
+    let StunClientEvent::StunMessageReceived(msg) = iter.next().expect("Expected event") else {
         panic!("Expected StunMessageReceived event");
     };
     assert_eq!(msg.method(), BINDING);
@@ -410,10 +410,10 @@ fn test_stun_client_transaction_finished_sucess_response() {
     // consume the events
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(_) = iter.next().expect("Expected event") else {
+    let StunClientEvent::OutputPacket(_) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
-    let StuntClientEvent::RestransmissionTimeOut((id, _)) = iter.next().expect("Expected event")
+    let StunClientEvent::RestransmissionTimeOut((id, _)) = iter.next().expect("Expected event")
     else {
         panic!("Expected RestransmissionTimeOut event");
     };
@@ -434,7 +434,7 @@ fn test_stun_client_transaction_finished_sucess_response() {
     // consume the events
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::StunMessageReceived(msg) = iter.next().expect("Expected event") else {
+    let StunClientEvent::StunMessageReceived(msg) = iter.next().expect("Expected event") else {
         panic!("Expected TransactionFinished event");
     };
     // No more events

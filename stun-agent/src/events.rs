@@ -5,7 +5,7 @@ use stun_rs::{StunMessage, TransactionId};
 
 /// Stun client events
 #[derive(Debug)]
-pub enum StuntClientEvent {
+pub enum StunClientEvent {
     /// Notification used by the STUN client to send a STUN packet to the server
     OutputPacket(StunPacket),
     /// This event sets a timeout for a transaction identified by the [`TransactionId`].
@@ -40,7 +40,7 @@ pub enum StunTransactionError {
 
 #[derive(Debug, Default)]
 pub struct TransactionEventHandler {
-    events: Vec<StuntClientEvent>,
+    events: Vec<StunClientEvent>,
 }
 
 impl TransactionEventHandler {
@@ -51,7 +51,7 @@ impl TransactionEventHandler {
         }
     }
 
-    pub fn events(&mut self) -> Vec<StuntClientEvent> {
+    pub fn events(&mut self) -> Vec<StunClientEvent> {
         std::mem::take(&mut self.events)
     }
 }
@@ -59,11 +59,11 @@ impl TransactionEventHandler {
 #[derive(Debug)]
 pub struct TransactionEvents<'a> {
     handler: &'a mut TransactionEventHandler,
-    events: Vec<StuntClientEvent>,
+    events: Vec<StunClientEvent>,
 }
 
 impl TransactionEvents<'_> {
-    pub fn push(&mut self, event: StuntClientEvent) {
+    pub fn push(&mut self, event: StunClientEvent) {
         self.events.push(event);
     }
 }
@@ -108,8 +108,8 @@ mod stun_event_tests {
         {
             let mut events = handler.init();
 
-            events.push(StuntClientEvent::Retry(TransactionId::default()));
-            events.push(StuntClientEvent::Retry(TransactionId::default()));
+            events.push(StunClientEvent::Retry(TransactionId::default()));
+            events.push(StunClientEvent::Retry(TransactionId::default()));
         }
 
         // Drop the events must commit the events
@@ -141,16 +141,16 @@ mod stun_event_tests {
         let mut handler = TransactionEventHandler::default();
         {
             let mut events = handler.init();
-            events.push(StuntClientEvent::Retry(TransactionId::default()));
+            events.push(StunClientEvent::Retry(TransactionId::default()));
         }
 
         {
             // Init another transaction when there must be one event
             // that was not consumed previously, that event will be dropped
             let mut events = handler.init();
-            events.push(StuntClientEvent::Retry(TransactionId::default()));
-            events.push(StuntClientEvent::Retry(TransactionId::default()));
-            events.push(StuntClientEvent::Retry(TransactionId::default()));
+            events.push(StunClientEvent::Retry(TransactionId::default()));
+            events.push(StunClientEvent::Retry(TransactionId::default()));
+            events.push(StunClientEvent::Retry(TransactionId::default()));
         }
 
         // There must be only three events

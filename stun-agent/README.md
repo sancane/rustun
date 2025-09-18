@@ -65,7 +65,7 @@ implementation could have been realized as follows:
 
 ```rust
 fn handle_data(in_bytes: &[u8])
--> Result<Vec<StuntClientEvent>, (StunAgentError, Vec<StuntClientEvent>)> {
+-> Result<Vec<StunClientEvent>, (StunAgentError, Vec<StunClientEvent>)> {
 // Implementation
 }
 ```
@@ -195,7 +195,7 @@ assert_eq!(events.len(), 1);
 let mut iter = events.iter();
 
 // Next event already contains the buffer that needs to be send to the server.
-let StuntClientEvent::OutputPacket(buffer) = iter
+let StunClientEvent::OutputPacket(buffer) = iter
     .next()
     .expect("Expected event")
 else {
@@ -227,7 +227,7 @@ let events = client.events();
 assert_eq!(events.len(), 2);
 let mut iter = events.iter();
 // Next event already contains the buffer that needs to be send to the server.
-let StuntClientEvent::OutputPacket(buffer) = iter
+let StunClientEvent::OutputPacket(buffer) = iter
     .next()
     .expect("Expected event")
 else {
@@ -235,7 +235,7 @@ else {
 };
 // Next event indicates that the user must set a timeout for the transaction
 // identified by the transaction_id.
-let StuntClientEvent::RestransmissionTimeOut((id, duration)) = iter
+let StunClientEvent::RestransmissionTimeOut((id, duration)) = iter
     .next()
     .expect("Expected event")
 else {
@@ -260,13 +260,13 @@ assert_eq!(events.len(), 2);
 let mut iter = events.iter();
 
 // Next event contains the buffer that needs to be retransmitted.
-let StuntClientEvent::OutputPacket(buffer) = iter
+let StunClientEvent::OutputPacket(buffer) = iter
     .next()
     .expect("Expected event")
 else {
         panic!("Expected OutputBuffer event");
 };
-let StuntClientEvent::RestransmissionTimeOut((id, duration)) = iter
+let StunClientEvent::RestransmissionTimeOut((id, duration)) = iter
     .next()
     .expect("Expected event")
 else {
@@ -305,7 +305,7 @@ the client to generate events that can be pulled by the controller.
  assert_eq!(events.len(), 1);
 
  let mut iter = events.iter();
- let StuntClientEvent::StunMessageReceived(msg) = iter
+ let StunClientEvent::StunMessageReceived(msg) = iter
      .next()
      .expect("Expected event")
  else {

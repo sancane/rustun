@@ -1,5 +1,5 @@
 use stun_agent::{
-    RttConfig, StunAgentError, StunAttributes, StunClient, StunClienteBuilder, StuntClientEvent,
+    RttConfig, StunAgentError, StunAttributes, StunClient, StunClienteBuilder, StunClientEvent,
     TransportReliability,
 };
 use stun_rs::{
@@ -24,7 +24,7 @@ fn check_fingerprint_paramaters(
 ) {
     let events = client.events();
     let mut iter = events.iter();
-    let StuntClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
+    let StunClientEvent::OutputPacket(packet) = iter.next().expect("Expected event") else {
         panic!("Expected OutputBuffer event");
     };
     let decoder = MessageDecoderBuilder::default().build();
@@ -39,7 +39,7 @@ fn check_fingerprint_paramaters(
     assert_eq!(transaction_id, msg.transaction_id());
 
     if class == MessageClass::Request {
-        let StuntClientEvent::RestransmissionTimeOut((id, _)) =
+        let StunClientEvent::RestransmissionTimeOut((id, _)) =
             iter.next().expect("Expected event")
         else {
             panic!("Expected RestransmissionTimeOut event");
