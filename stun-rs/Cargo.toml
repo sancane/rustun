@@ -12,8 +12,16 @@ license = "MIT/Apache-2.0"
 categories = ["network-programming"]
 edition = "2021"
 
-[dev-dependencies]
-stun-vectors = { path = "../stun-vectors" }
+[package.metadata.docs.rs]
+all-features = true
+
+[features]
+default = []
+discovery = []
+experiments = []
+ice = []
+mobility = []
+turn = []
 
 [dependencies]
 base64 = "0.22.0"
@@ -33,13 +41,5 @@ precis-profiles = "0.1.12"
 quoted-string-parser = "0.1.0"
 rand = "0.9.0"
 
-[features]
-default = []
-experiments = []
-ice = []
-turn = []
-mobility = []
-discovery = []
-
-[package.metadata.docs.rs]
-all-features = true
+[dev-dependencies]
+stun-vectors = { path = "../stun-vectors" }

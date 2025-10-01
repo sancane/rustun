@@ -1,8 +1,4 @@
 [workspace]
 resolver = "2"
 
-members = ["stun-agent",
-    "stun-agent",
-    "stun-rs",
-    "stun-vectors",
-]
+members = ["stun-agent", "stun-rs", "stun-vectors"]

@@ -30,11 +30,11 @@ impl RequestedTrasport {
     /// Creates a new attribute.
     /// # Arguments:
     /// - `protocol`- The protocol specifies the desired protocol. The code points
-    ///               used in this field are taken from those allowed in the Protocol
-    ///               field in the IPv4 header and the Next Header field in the IPv6
-    ///               header [PROTOCOL-NUMBERS](https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml).
-    ///               This specification only allows the use of code point 17
-    ///               (User Datagram Protocol).
+    ///   used in this field are taken from those allowed in the Protocol
+    ///   field in the IPv4 header and the Next Header field in the IPv6
+    ///   header [PROTOCOL-NUMBERS](https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml).
+    ///   This specification only allows the use of code point 17
+    ///   (User Datagram Protocol).
     pub fn new(protocol: ProtocolNumber) -> Self {
         Self(protocol)
     }

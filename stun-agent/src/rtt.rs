@@ -8,17 +8,6 @@ const BETA: f32 = 0.25; // (1/4)
 
 pub const DEFAULT_GRANULARITY: Duration = Duration::from_millis(1);
 
-// TODO: Remove this hack once duration_abs_diff
-// [#117618](https://github.com/rust-lang/rust/issues/117618)
-// was not nightly
-fn abs_diff(a: Duration, b: Duration) -> Duration {
-    if a > b {
-        a - b
-    } else {
-        b - a
-    }
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RttCalcuator {
     rto: Duration,
@@ -70,7 +59,7 @@ impl RttCalcuator {
             );
         } else {
             // Subsequent RTT measurements
-            self.rttvar = self.rttvar.mul_f32(1.0 - BETA) + abs_diff(self.srtt, r).mul_f32(BETA);
+            self.rttvar = self.rttvar.mul_f32(1.0 - BETA) + self.srtt.abs_diff(r).mul_f32(BETA);
             self.srtt = self.srtt.mul_f32(1.0 - ALPHA) + r.mul_f32(ALPHA);
             self.rto = self.srtt + cmp::max(self.granularity, self.rttvar.mul_f32(K as f32));
             trace!(

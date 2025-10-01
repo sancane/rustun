@@ -44,7 +44,7 @@ pub struct TransactionEventHandler {
 }
 
 impl TransactionEventHandler {
-    pub fn init(&mut self) -> TransactionEvents {
+    pub fn init(&mut self) -> TransactionEvents<'_> {
         TransactionEvents {
             handler: self,
             events: Vec::new(),
