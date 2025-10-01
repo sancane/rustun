@@ -228,9 +228,9 @@ impl HMACKey {
     /// - `username` - The user name
     /// - `realm` - The realm.
     /// - `algorithm`- Optional value for the algorithm used to generate the key. If
-    ///      algorithm is None, [`AlgorithmId::MD5`](crate::AlgorithmId::MD5) will be used.
-    ///      The resulting key length is 16 bytes when `MD5` is used, or 32 bytes if
-    ///      SHA-256 algorithm is used.
+    ///   algorithm is None, [`AlgorithmId::MD5`](crate::AlgorithmId::MD5) will be used.
+    ///   The resulting key length is 16 bytes when `MD5` is used, or 32 bytes if
+    ///   SHA-256 algorithm is used.
     /// # Returns
     /// The new [`HMACKey`] used for long term credential mechanism, or a `StunError` if
     /// `username`, `realm` or `password` can not be processed using the opaque string profile.
